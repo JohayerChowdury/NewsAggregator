@@ -8,6 +8,8 @@ from bs4 import BeautifulSoup
 
 from flask import Flask, render_template, request
 
+from datetime import datetime
+
 app = Flask(__name__)
 
 RSS_FEEDS = {
@@ -17,15 +19,38 @@ RSS_FEEDS = {
     'CNBC': 'https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=15839069'
 }
 
+def format_published_date(published):
+    if published:
+        if isinstance(published, str):
+            try:
+                published = datetime.strptime(published, '%Y-%m-%dT%H:%M:%SZ')
+            except ValueError:
+                try:
+                    published = datetime.strptime(published, '%a, %d %b %Y %H:%M:%S %z')
+                except ValueError:
+                    return None
+        elif isinstance(published, tuple):
+            published = datetime(*published[:6])
+        return published.strftime('%Y-%m-%d %H:%M:%S')
+    return None
+
+def parse_feed(feed_url):
+    parsed_feed = feedparser.parse(feed_url)
+    articles = []
+    for entry in parsed_feed.entries:
+        published = entry.get('published_parsed') or entry.get('published')
+        published = format_published_date(published)
+        articles.append((entry, published))
+    return articles
+
 @app.route('/')
 def index():
     articles = []
     for source, feed in RSS_FEEDS.items():
-        parsed_feed = feedparser.parse(feed)
-        entries = [(source, entry) for entry in parsed_feed.entries]
-        articles.extend(entries)
+        parsed_articles = parse_feed(feed)
+        articles.extend([(source, entry, published) for entry, published in parsed_articles])
 
-    articles = sorted(articles, key=lambda x: x[1].published_parsed, reverse=True)
+    articles = sorted(articles, key=lambda x: x[2], reverse=True)
 
     page = request.args.get('page', 1, type=int)
     per_page = 10
@@ -41,14 +66,11 @@ def search():
 
     articles = []
     for source, feed in RSS_FEEDS.items():
-        parsed_feed = feedparser.parse(feed)
-        entries = [(source, entry) for entry in parsed_feed.entries if query.lower() in entry.title.lower()]
-        articles.extend(entries)
+        parsed_articles = parse_feed(feed)
+        filtered_articles = [(source, entry, published) for entry, published in parsed_articles if query.lower() in entry.title.lower()]
+        articles.extend(filtered_articles)
     
-    results = [article for article in articles if query.lower() in article[1].title.lower()]
-
-
-    return render_template('search_results.html', articles=results, query=query)
+    return render_template('search_results.html', articles=articles, query=query)
 
 # # Set up Selenium WebDriver
 # chrome_options = Options()
