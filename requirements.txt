@@ -6,3 +6,5 @@ flask
 feedparser
 lxml
 urllib3
+openai
+python-dotenv
