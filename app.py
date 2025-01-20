@@ -15,7 +15,7 @@ RSS_FEEDS = {
     # 'Wall Street Journal': 'https://feeds.a.dj.com/rss/RSSMarketsMain.xml', # works
     # "New York Times": "https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml",  # works
     # "Canadian Mortgage Trends": "https://www.canadianmortgagetrends.com/feed/",  # works
-    # "Google News: Canadian Accessory Dwelling Unit": "https://news.google.com/rss/search?q=canadian%20accessory%20dwelling%20unit&hl=en-CA&gl=CA&ceid=CA%3Aen",  # works
+    "Google News: Canadian Accessory Dwelling Unit": "https://news.google.com/rss/search?q=canadian%20accessory%20dwelling%20unit&hl=en-CA&gl=CA&ceid=CA%3Aen",  # works
     # "Government of Ontario: All News": "https://news.ontario.ca/newsroom/en/rss/allnews.rss",  # works
     # "Government of Canada: Finance": "https://api.io.canada.ca/io-server/gc/news/en/v2?dept=departmentfinance&type=newsreleases&sort=publishedDate&orderBy=desc&publishedDate%3E=2020-08-09&pick=100&format=atom&atomtitle=Canada%20News%20Centre%20-%20Department%20of%20Finance%20Canada%20-%20News%20Releases" # doesnt work,
     # "CBC News": "https://rss.cbc.ca/lineup/topstories.xml" # unsure
@@ -147,25 +147,32 @@ def parse_feed(feed_url):
 def index():
     articles = []
 
-    # for source, feed in RSS_FEEDS.items():
-    #     print(f"Fetching {source} feed from {feed}")
-    #     parsed_articles = parse_feed(feed)
-    #     articles.extend(
-    #         [
-    #             (source, entry, date_published)
-    #             for entry, date_published in parsed_articles
-    #             if entry is not None
-    #         ]
-    #     )
+    for source, feed in RSS_FEEDS.items():
+        print(f"Fetching {source} feed from {feed}")
+        parsed_articles = parse_feed(feed)
+        articles.extend(
+            [
+                (source, entry, date_published)
+                for entry, date_published in parsed_articles
+                if entry is not None
+            ]
+        )
 
     for source, feed in WEBSITES.items():
         print(f"Fetching {source} feed from {feed}")
-        parsed_articles = find_rss_links(feed)
-        articles.extend(
-            [(source, entry) for entry in parsed_articles if entry is not None]
-        )
+        feed_all = find_rss_links(feed)
+        for feed in feed_all:
+            print(f"Fetching articles from {feed}")
+            parsed_articles = parse_feed(feed)
+            articles.extend(
+                [
+                    (source, entry, date_published)
+                    for entry, date_published in parsed_articles
+                    if entry is not None
+                ]
+            )
 
-    # articles = sorted(articles, key=lambda x: x[2], reverse=True) or []
+    articles = sorted(articles, key=lambda x: x[2], reverse=True) or []
 
     page = request.args.get("page", 1, type=int)
     per_page = 10
