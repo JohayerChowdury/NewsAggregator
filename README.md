@@ -64,6 +64,8 @@
   pip install -r requirements.txt
   ```
 
+### Once you're here, you can turn the app on and off by following the steps below.
+
 #### 8. **Run the Flask App**
 
 - Start the Flask app with this command:

@@ -1,26 +1,16 @@
-from dotenv import load_dotenv
-import os
-
 import feedparser
 import ssl
 
-from newsapi import NewsApiClient
+# import json
 
 from flask import Flask, render_template, request
 
 from server.utils import format_published_date, find_rss_links
 
-# Load the environment variables
-load_dotenv()
-
-news_api_key = os.getenv("NEWS_API_KEY")
-
-if news_api_key is None:
-    news_api_key = ""
+# from server.utils.news_api import search_news_articles
+from server.utils.pygooglenews import search_news, top_news
 
 app = Flask(__name__)
-
-# api = NewsApiClient(api_key=news_api_key)
 
 # Add the appropriate RSS feeds
 RSS_FEEDS = {
@@ -28,7 +18,7 @@ RSS_FEEDS = {
     # 'Wall Street Journal': 'https://feeds.a.dj.com/rss/RSSMarketsMain.xml', # works
     # "New York Times": "https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml",  # works
     # "Canadian Mortgage Trends": "https://www.canadianmortgagetrends.com/feed/",  # works
-    "Google News: Canadian Accessory Dwelling Unit": "https://news.google.com/rss/search?q=canadian%20accessory%20dwelling%20unit&hl=en-CA&gl=CA&ceid=CA%3Aen",  # works
+    # "Google News: Canadian Accessory Dwelling Unit": "https://news.google.com/rss/search?q=canadian%20accessory%20dwelling%20unit&hl=en-CA&gl=CA&ceid=CA%3Aen",  # works
     # "Government of Ontario: All News": "https://news.ontario.ca/newsroom/en/rss/allnews.rss",  # works
     # "Government of Canada: Finance": "https://api.io.canada.ca/io-server/gc/news/en/v2?dept=departmentfinance&type=newsreleases&sort=publishedDate&orderBy=desc&publishedDate%3E=2020-08-09&pick=100&format=atom&atomtitle=Canada%20News%20Centre%20-%20Department%20of%20Finance%20Canada%20-%20News%20Releases" # doesnt work,
     # "CBC News": "https://rss.cbc.ca/lineup/topstories.xml" # unsure
@@ -62,21 +52,8 @@ def index():
     articles = []
 
     for source, feed in RSS_FEEDS.items():
-        print(f"Fetching {source} feed from {feed}")
-        parsed_articles = parse_feed(feed)
-        articles.extend(
-            [
-                (source, entry, date_published)
-                for entry, date_published in parsed_articles
-                if entry is not None
-            ]
-        )
-
-    for source, feed in WEBSITES.items():
-        print(f"Fetching {source} feed from {feed}")
-        feed_all = find_rss_links(feed)
-        for feed in feed_all:
-            print(f"Fetching articles from {feed}")
+        try:
+            print(f"Fetching {source} feed from {feed}")
             parsed_articles = parse_feed(feed)
             articles.extend(
                 [
@@ -85,9 +62,42 @@ def index():
                     if entry is not None
                 ]
             )
+        except Exception as e:
+            print(f"Error fetching articles from {source}: {e}")
 
-    # print(set(api.get_top_headlines(sources="bbc-news")[articles]))
+    for source, feed in WEBSITES.items():
+        try:
+            print(f"Fetching {source} feed from {feed}")
+            feed_all = find_rss_links(feed)
+            for feed in feed_all:
+                print(f"Fetching articles from {feed}")
+                parsed_articles = parse_feed(feed)
+                articles.extend(
+                    [
+                        (source, entry, date_published)
+                        for entry, date_published in parsed_articles
+                        if entry is not None
+                    ]
+                )
+        except Exception as e:
+            print(f"Error fetching articles from {source}: {e}")
 
+    try:
+        news_articles = search_news("canadian accessory dwelling unit")
+        for article in news_articles:
+            articles.append(
+                (
+                    f"Google News: {article.source.title} ",
+                    article,
+                    format_published_date(
+                        article.published_parsed or article.published
+                    ),
+                )
+            )
+    except Exception as e:
+        print(e)
+
+    # TODO: date sorting is wrong, need to fix
     articles = sorted(articles, key=lambda x: x[2], reverse=True) or []
 
     page = request.args.get("page", 1, type=int)
@@ -125,6 +135,14 @@ def search():
             if query.lower() in article[1].title.lower()
             or query.lower() in article[1].summary.lower()
         ]
+
+    # Fetch news articles using NewsApiClient
+    try:
+        news_articles = search_news_articles([query])
+        for article in news_articles:
+            articles.append(("NewsAPI", article, article["publishedAt"]))
+    except Exception as e:
+        print(e)
 
     return render_template("search_results.html", articles=results, query=query)
 

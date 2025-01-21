@@ -1,11 +1,18 @@
-beautifulsoup4==4.9.3
+flask
+python-dotenv
+
 requests
 requests-html
-selenium==3.141.0
-flask
-feedparser
+
 lxml
 urllib3
+
 openai
-python-dotenv
+
+# web scraping libaries
+beautifulsoup4==4.9.3
+feedparser
+
+# news api packages (may use multiple or just one)
 newsapi-python
+pygooglenews
