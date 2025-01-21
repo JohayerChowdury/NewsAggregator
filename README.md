@@ -32,9 +32,17 @@
 #### 4. **Navigate to the Project Folder**
 
 - In the terminal, use the `cd` command to go to the folder where you extracted the ZIP file.
-  - Example: If you extracted it to `C:\Users\HighlineBeta\Downloads\NewsAggregator-main`, type:
+
+  - Example: If you extracted it to `C:\Users\HighlineBeta\Documents\My Work`, type:
+
     ```bash
-    cd C:/Users/HighlineBeta/Downloads/NewsAggregator-main
+    cd "C:/Users/HighlineBeta/Documents/My Work"
+    ```
+
+    then type
+
+    ```bash
+    cd NewsAggregator-main
     ```
 
 #### 5. **Create a Virtual Environment**
