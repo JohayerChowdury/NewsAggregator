@@ -4,7 +4,7 @@
 
 ### Steps to Run the News Aggregator App Locally
 
-### First Time
+### :bangbang:  First Time
 
 #### 1. **Install Python**
 
@@ -15,7 +15,7 @@
   - Follow the prompts to complete the installation.
 - Once you have python installed, you shouldn't have to install again unless requiring a newer version.
 
-### For new changes to the app (for now)
+### :bangbang: For new changes to the app (for now)
 
 #### 2. **Download the Project**
 
@@ -72,7 +72,7 @@
   pip install -r requirements.txt
   ```
 
-### Once you're here, you can turn the app on and off by following the steps below.
+### :repeat: Once you're here, you can turn the app on and off by following the steps below.
 
 #### 8. **Run the Flask App**
 
