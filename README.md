@@ -38,6 +38,7 @@
   python -m venv venv
   ```
 - This will create a folder named `venv` in the project directory.
+- If you already have a folder dedicated to the virtual environment, please delete the folder after you pulled in new code. You will need to run this command succesfully to continue.
 
 #### 6. **Activate the Virtual Environment**
 
