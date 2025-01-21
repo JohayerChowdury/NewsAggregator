@@ -8,7 +8,7 @@ from newsapi import NewsApiClient
 
 from flask import Flask, render_template, request
 
-from utils import format_published_date, find_rss_links
+from server.utils import format_published_date, find_rss_links
 
 # Load the environment variables
 load_dotenv()

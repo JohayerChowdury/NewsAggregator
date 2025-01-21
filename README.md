@@ -68,7 +68,7 @@
 
 - Start the Flask app with this command:
   ```bash
-  python app.py
+  python run.py
   ```
 - You will see a message like:
   ```
