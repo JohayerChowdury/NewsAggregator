@@ -1,3 +1,6 @@
+from dotenv import load_dotenv
+import os
+
 import feedparser
 import ssl
 
@@ -7,7 +10,17 @@ from flask import Flask, render_template, request
 
 from utils import format_published_date, find_rss_links
 
+# Load the environment variables
+load_dotenv()
+
+news_api_key = os.getenv("NEWS_API_KEY")
+
+if news_api_key is None:
+    news_api_key = ""
+
 app = Flask(__name__)
+
+# api = NewsApiClient(api_key=news_api_key)
 
 # Add the appropriate RSS feeds
 RSS_FEEDS = {
@@ -19,11 +32,11 @@ RSS_FEEDS = {
     # "Government of Ontario: All News": "https://news.ontario.ca/newsroom/en/rss/allnews.rss",  # works
     # "Government of Canada: Finance": "https://api.io.canada.ca/io-server/gc/news/en/v2?dept=departmentfinance&type=newsreleases&sort=publishedDate&orderBy=desc&publishedDate%3E=2020-08-09&pick=100&format=atom&atomtitle=Canada%20News%20Centre%20-%20Department%20of%20Finance%20Canada%20-%20News%20Releases" # doesnt work,
     # "CBC News": "https://rss.cbc.ca/lineup/topstories.xml" # unsure
-    # "News API: Test: ...": "https://newsapi.org/v2/top-headlines?country=us&apiKey=${NEWS_API_KEY}"
 }
 
 WEBSITES = {
     # "Accessorry Dwelling Finance News": "https://accessorydwellings.org/category/news/financing-news/",
+    # "Flexobuild News": "https://flexobuild.com/media" # not works
 }
 
 
@@ -72,6 +85,8 @@ def index():
                     if entry is not None
                 ]
             )
+
+    # print(set(api.get_top_headlines(sources="bbc-news")[articles]))
 
     articles = sorted(articles, key=lambda x: x[2], reverse=True) or []
 

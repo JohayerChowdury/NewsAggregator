@@ -4,6 +4,8 @@
 
 ### Steps to Run the News Aggregator App Locally
 
+### First Time
+
 #### 1. **Install Python**
 
 - Go to the [Python Downloads Page](https://www.python.org/downloads/).
@@ -11,12 +13,16 @@
 - During installation:
   - **On Windows**: Check the box that says **Add Python to PATH** before clicking "Install Now".
   - Follow the prompts to complete the installation.
+- Once you have python installed, you shouldn't have to install again unless requiring a newer version.
+
+### For new changes to the app (for now)
 
 #### 2. **Download the Project**
 
 - Open your browser and visit the GitHub link I provided for the project.
 - Click the green **Code** button and select **Download ZIP**.
 - Once the download finishes, extract the ZIP file to a folder on your computer.
+- Copy the path where your extracted folder is (for step 4) ![Example of project folder path](assets/documentation/example_of_project_path.png)
 
 #### 3. **Open a Terminal or Command Prompt**
 
@@ -26,9 +32,9 @@
 #### 4. **Navigate to the Project Folder**
 
 - In the terminal, use the `cd` command to go to the folder where you extracted the ZIP file.
-  - Example: If you extracted it to `path_to/my_project`, type:
+  - Example: If you extracted it to `C:\Users\HighlineBeta\Downloads\NewsAggregator-main`, type:
     ```bash
-    cd path_to/my_project
+    cd C:/Users/HighlineBeta/Downloads/NewsAggregator-main
     ```
 
 #### 5. **Create a Virtual Environment**
@@ -38,7 +44,7 @@
   python -m venv venv
   ```
 - This will create a folder named `venv` in the project directory.
-- If you already have a folder dedicated to the virtual environment, please delete the folder after you pulled in new code. You will need to run this command succesfully to continue.
+- **NOTE**: If you already have a folder (named `venv`) or else dedicated to the virtual environment, please delete the folder after new downloads (in step 3). You will need to run this command succesfully to continue.
 
 #### 6. **Activate the Virtual Environment**
 

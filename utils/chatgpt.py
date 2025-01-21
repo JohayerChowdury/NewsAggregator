@@ -9,6 +9,8 @@ load_dotenv()
 # Set the API key
 api_key = os.getenv("OPENAI_API_KEY")
 
+if api_key is None:
+    api_key = ""
 # Create an instance of the OpenAI class
 client = OpenAI(api_key=api_key)
 
