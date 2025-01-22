@@ -10,9 +10,9 @@ urllib3
 openai
 
 # web scraping libaries
-beautifulsoup4==4.9.3
+beautifulsoup4==4.12.2
 feedparser
 
 # news api packages (may use multiple or just one)
 newsapi-python
-pygooglenews
+pygooglenews==0.1.3
