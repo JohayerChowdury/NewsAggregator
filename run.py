@@ -84,17 +84,30 @@ def index():
             print(f"Error fetching articles from {source}: {e}")
 
     try:
-        news_articles = search_news("canadian accessory dwelling unit")
-        for article in news_articles:
-            articles.append(
-                (
-                    f"Google News: {article.source.title} ",
-                    article,
-                    format_published_date(
-                        article.published_parsed or article.published
-                    ),
+        # List of queries
+        queries = [
+            # "Canadian accessory dwelling unit", # NOTE: looks like adding "Canadian" doesn't work well
+            # "Canadian mortgage regulations",
+            # "Canadian zoning laws",
+            "accessory dwelling unit",
+            "mortgage regulations",
+            "zoning laws",
+            # "colgate"
+        ]
+
+        # Fetch news articles for each query
+        for query in queries:
+            news_articles = search_news(query)
+            for article in news_articles:
+                articles.append(
+                    (
+                        f"Google News: {article.source.title} ",
+                        article,
+                        format_published_date(
+                            article.published_parsed or article.published
+                        ),
+                    )
                 )
-            )
     except Exception as e:
         print(e)
 
@@ -109,6 +122,7 @@ def index():
     paginated_articles = articles[start:end]
     return render_template(
         "index.html",
+        queries=queries,
         articles=paginated_articles,
         page=page,
         total_pages=total_articles // per_page + 1,

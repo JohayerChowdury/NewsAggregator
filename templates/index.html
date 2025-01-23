@@ -1,4 +1,13 @@
 {% extends 'base.html' %} {% block content %}
+<div class="queries">
+  <h3>Searching following queries:</h3>
+  <ul>
+    {% for query in queries %}
+    <li>{{ query }}</li>
+    {% endfor %}
+  </ul>
+  <p></p>
+</div>
 <div class="articles">
   {% for article in articles %}
   <article>
