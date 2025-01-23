@@ -22,7 +22,7 @@ def search_news_articles(keywords=[""]):
 
     # Fetch the news articles
     response = newsapi.get_everything(
-        q="canadian AND accessory AND dwelling AND unit",
+        q=query,
         language="en",
         sort_by="relevancy",
     )
@@ -33,20 +33,3 @@ def search_news_articles(keywords=[""]):
         return response["articles"]
     else:
         raise Exception(f"Error fetching news articles: {response['message']}")
-
-
-if __name__ == "__main__":
-    keywords = [
-        "canadian accessory dwelling unit",
-        "canadian financing",
-        "canadian housing",
-    ]
-
-    try:
-        articles = search_news_articles(keywords)
-        for article in articles:
-            print(f"Title: {article['title']}")
-            print(f"Description: {article['description']}")
-            print(f"URL: {article['url']}\n")
-    except Exception as e:
-        print(e)

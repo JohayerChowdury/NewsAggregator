@@ -1,19 +1,50 @@
 {% extends 'base.html' %} {% block content %}
+<div class="filters">
+  <h3>Filter:</h3>
+  <button id="openSourcesDialog">By Source</button>
+  <dialog id="filterSourcesDialog">
+    <button id="closeSourcesDialog">Close</button>
+    <ul>
+      {% for source in sources %}
+      <li><a href="{{ url_for('index', source=source) }}">{{ source }}</a></li>
+      {% endfor %}
+    </ul>
+  </dialog>
+</div>
 <div class="queries">
   <h3>Searching following queries:</h3>
-  <ul>
-    {% for query in queries %}
-    <li>{{ query }}</li>
-    {% endfor %}
-  </ul>
-  <p></p>
+  <div class="google-news">
+    <h4>from Google News</h4>
+    <ul>
+      {% for query in queries %}
+      <li>{{ query }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  <div class="rss-feeds">
+    <h4>from these RSS feeds</h4>
+    <!-- <ul>
+      {% for query in queries %}
+      <li>{{ query }}</li>
+      {% endfor %}
+    </ul> -->
+  </div>
+  <div class="websites">
+    <h4>from these websites</h4>
+    <ul>
+      <!-- {% for query in queries %}
+      <li>{{ query }}</li>
+      {% endfor %} -->
+    </ul>
+  </div>
 </div>
 <div class="articles">
   {% for article in articles %}
   <article>
     <h2><a href="{{ article[1].link or article[1].url }}">{{ article[1].title }}</a></h2>
-    <p>{{ article[2] }}</p>
+    <p>Published: {{ article[2] }}</p>
     <p>Source: {{ article[0] }}</p>
+    <!-- <p>Author: {{ article[1]}}</p> -->
   </article>
   {% endfor %}
 </div>
@@ -24,4 +55,18 @@
   <a href="{{ url_for('index', page=page+1) }}">Next</a>
   {% endif %}
 </div>
+<script>
+  // for sources
+  const openSourcesDialogButton = document.getElementById("openSourcesDialog");
+  const closeDialogSourcesButton = document.getElementById("closeSourcesDialog");
+  const filterSourcesDialog = document.getElementById("filterSourcesDialog");
+
+  openSourcesDialogButton.addEventListener("click", () => {
+    filterSourcesDialog.showModal();
+  });
+
+  closeDialogSourcesButton.addEventListener("click", () => {
+    filterSourcesDialog.close();
+  });
+</script>
 {% endblock %}

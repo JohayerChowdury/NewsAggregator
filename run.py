@@ -30,6 +30,16 @@ WEBSITES = {
     # "Flexobuild News": "https://flexobuild.com/media" # not works
 }
 
+GOOGLE_NEWS_SEARCH_QUERIES = [
+    # "Canadian accessory dwelling unit", # NOTE: looks like adding "Canadian" doesn't work well
+    # "Canadian mortgage regulations",
+    # "Canadian zoning laws",
+    "accessory dwelling unit",
+    "mortgage regulations",
+    "zoning laws",
+    # "colgate"
+]
+
 
 def parse_feed(feed_url):
     if hasattr(ssl, "_create_unverified_context"):
@@ -48,8 +58,7 @@ def parse_feed(feed_url):
     return articles
 
 
-@app.route("/")
-def index():
+def get_articles(queries=[""]):
     articles = []
 
     for source, feed in RSS_FEEDS.items():
@@ -84,17 +93,6 @@ def index():
             print(f"Error fetching articles from {source}: {e}")
 
     try:
-        # List of queries
-        queries = [
-            # "Canadian accessory dwelling unit", # NOTE: looks like adding "Canadian" doesn't work well
-            # "Canadian mortgage regulations",
-            # "Canadian zoning laws",
-            "accessory dwelling unit",
-            "mortgage regulations",
-            "zoning laws",
-            # "colgate"
-        ]
-
         # Fetch news articles for each query
         for query in queries:
             news_articles = search_news(query)
@@ -110,9 +108,23 @@ def index():
                 )
     except Exception as e:
         print(e)
+    return articles
 
-    # TODO: date sorting is wrong, need to fix
-    articles = sorted(articles, key=lambda x: x[2], reverse=True) or []
+
+@app.route("/")
+def index():
+    selected_source = request.args.get("source")
+
+    articles = (
+        sorted(
+            get_articles(GOOGLE_NEWS_SEARCH_QUERIES), key=lambda x: x[2], reverse=True
+        )
+        or []
+    )
+    sources = sorted(list(set(article[0] for article in articles)))
+
+    if selected_source:
+        articles = [article for article in articles if article[0] == selected_source]
 
     page = request.args.get("page", 1, type=int)
     per_page = 10
@@ -122,44 +134,47 @@ def index():
     paginated_articles = articles[start:end]
     return render_template(
         "index.html",
-        queries=queries,
+        queries=GOOGLE_NEWS_SEARCH_QUERIES,
         articles=paginated_articles,
         page=page,
         total_pages=total_articles // per_page + 1,
+        sources=sources,
+        selected_sources=selected_source,
     )
 
 
 @app.route("/search")
 def search():
+    # TODO: need to make searched articles filterable by source
     query = request.args.get("query")
+    selected_source = request.args.get("source")
 
-    articles = []
-    for source, feed in RSS_FEEDS.items():
-        parsed_articles = parse_feed(feed)
-        articles.extend(
-            [
-                (source, entry, date_published)
-                for entry, date_published in parsed_articles
-                if entry is not None
-            ]
+    articles = (
+        sorted(
+            get_articles(GOOGLE_NEWS_SEARCH_QUERIES), key=lambda x: x[2], reverse=True
         )
+        or []
+    )
 
-        results = [
-            article
-            for article in articles
-            if query.lower() in article[1].title.lower()
-            or query.lower() in article[1].summary.lower()
-        ]
+    results = [
+        article
+        for article in articles
+        if query.lower() in article[1].title.lower()
+        or query.lower() in article[1].summary.lower()
+    ]
+    sources = sorted(list(set(article[0] for article in articles)))
 
-    # Fetch news articles using NewsApiClient
-    try:
-        news_articles = search_news_articles([query])
-        for article in news_articles:
-            articles.append(("NewsAPI", article, article["publishedAt"]))
-    except Exception as e:
-        print(e)
+    if selected_source:
+        articles = [article for article in articles if article[0] == selected_source]
 
-    return render_template("search_results.html", articles=results, query=query)
+    return render_template(
+        "search_results.html",
+        queries=GOOGLE_NEWS_SEARCH_QUERIES,
+        articles=results,
+        query=query,
+        sources=sources,
+        selected_sources=selected_source,
+    )
 
 
 if __name__ == "__main__":
