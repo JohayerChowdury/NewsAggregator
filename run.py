@@ -127,7 +127,7 @@ def index():
         articles = [article for article in articles if article[0] == selected_source]
 
     page = request.args.get("page", 1, type=int)
-    per_page = 10
+    per_page = 20
     total_articles = len(articles)
     start = (page - 1) * per_page
     end = start + per_page
@@ -162,10 +162,10 @@ def search():
         if query.lower() in article[1].title.lower()
         or query.lower() in article[1].summary.lower()
     ]
-    sources = sorted(list(set(article[0] for article in articles)))
+    sources = sorted(list(set(article[0] for article in results)))
 
     if selected_source:
-        articles = [article for article in articles if article[0] == selected_source]
+        articles = [article for article in results if article[0] == selected_source]
 
     return render_template(
         "search_results.html",
