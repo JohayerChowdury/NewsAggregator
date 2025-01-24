@@ -31,12 +31,11 @@ WEBSITES = {
 }
 
 GOOGLE_NEWS_SEARCH_QUERIES = [
-    # "Canadian accessory dwelling unit", # NOTE: looks like adding "Canadian" doesn't work well
-    # "Canadian mortgage regulations",
-    # "Canadian zoning laws",
-    "accessory dwelling unit",
-    "mortgage regulations",
+    "Canadian accessory dwelling unit",  # NOTE: looks like adding "Canadian" doesn't work well
+    "Canadian mortgage regulations",
     "zoning laws",
+    # "accessory dwelling unit",
+    # "mortgage regulations",
     # "colgate"
 ]
 
@@ -115,12 +114,7 @@ def get_articles(queries=[""]):
 def index():
     selected_source = request.args.get("source")
 
-    articles = (
-        sorted(
-            get_articles(GOOGLE_NEWS_SEARCH_QUERIES), key=lambda x: x[2], reverse=True
-        )
-        or []
-    )
+    articles = get_articles(GOOGLE_NEWS_SEARCH_QUERIES) or []
     sources = sorted(list(set(article[0] for article in articles)))
 
     if selected_source:
@@ -149,12 +143,7 @@ def search():
     query = request.args.get("query")
     selected_source = request.args.get("source")
 
-    articles = (
-        sorted(
-            get_articles(GOOGLE_NEWS_SEARCH_QUERIES), key=lambda x: x[2], reverse=True
-        )
-        or []
-    )
+    articles = get_articles(GOOGLE_NEWS_SEARCH_QUERIES) or []
 
     results = [
         article
