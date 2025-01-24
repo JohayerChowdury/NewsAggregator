@@ -11,6 +11,12 @@
     </ul>
   </dialog>
 </div>
+<div class="sorting">
+  <h2>Sort by:</h>
+    <h3>Date:</h3>
+    <button id="sortDateAsc">Ascending</button>
+    <button id="sortDateDesc">Descending</button>
+</div>
 <div class="queries">
   <h3>Searching following queries:</h3>
   <div class="google-news">
@@ -50,9 +56,10 @@
 </div>
 <div class="pagination">
   {% if page > 1 %}
-  <a href="{{ url_for('index', page=page-1) }}">Previous</a>
-  {% endif %} {% if page < total_pages %}
-  <a href="{{ url_for('index', page=page+1) }}">Next</a>
+  <a href="{{ url_for('index', page=page-1, sort_date=sort_date, source=selected_sources) }}">Previous</a>
+  {% endif %}
+  {% if page < total_pages %}
+  <a href="{{ url_for('index', page=page+1, sort_date=sort_date, source=selected_sources) }}">Next</a>
   {% endif %}
 </div>
 <script>
@@ -67,6 +74,19 @@
 
   closeDialogSourcesButton.addEventListener("click", () => {
     filterSourcesDialog.close();
+  });
+
+  // for sorting
+  document.getElementById("sortDateAsc").addEventListener("click", () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    urlParams.set('sort_date', 'asc');
+    window.location.search = urlParams.toString();
+  });
+
+  document.getElementById("sortDateDesc").addEventListener("click", () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    urlParams.set('sort_date', 'desc');
+    window.location.search = urlParams.toString();
   });
 </script>
 {% endblock %}

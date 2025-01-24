@@ -112,11 +112,15 @@ def get_articles(queries=[""]):
 
 @app.route("/")
 def index():
-    selected_source = request.args.get("source")
 
     articles = get_articles(GOOGLE_NEWS_SEARCH_QUERIES) or []
-    sources = sorted(list(set(article[0] for article in articles)))
 
+    sort_date = request.args.get("sort_date")
+    if sort_date:
+        articles.sort(key=lambda x: x[2], reverse=(sort_date == "desc"))
+
+    sources = sorted(list(set(article[0] for article in articles)))
+    selected_source = request.args.get("source")
     if selected_source:
         articles = [article for article in articles if article[0] == selected_source]
 
@@ -134,6 +138,7 @@ def index():
         total_pages=total_articles // per_page + 1,
         sources=sources,
         selected_sources=selected_source,
+        sort_date=sort_date,
     )
 
 
