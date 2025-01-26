@@ -1,44 +1,5 @@
 {% extends 'base.html' %} {% block content %}
 <h2>Search Results For: {{ query }}</h2>
-<div class="filters">
-  <h3>Filter:</h3>
-  <button id="openSourcesDialog">By Source</button>
-  <dialog id="filterSourcesDialog">
-    <button id="closeSourcesDialog">Close</button>
-    <ul>
-      {% for source in sources %}
-      <li><a href="{{ url_for('index', source=source) }}">{{ source }}</a></li>
-      {% endfor %}
-    </ul>
-  </dialog>
-</div>
-<div class="queries">
-  <h3>Searching following queries:</h3>
-  <div class="google-news">
-    <h4>from Google News</h4>
-    <ul>
-      {% for query in queries %}
-      <li>{{ query }}</li>
-      {% endfor %}
-    </ul>
-  </div>
-  <div class="rss-feeds">
-    <h4>from these RSS feeds</h4>
-    <!-- <ul>
-      {% for query in queries %}
-      <li>{{ query }}</li>
-      {% endfor %}
-    </ul> -->
-  </div>
-  <div class="websites">
-    <h4>from these websites</h4>
-    <ul>
-      <!-- {% for query in queries %}
-      <li>{{ query }}</li>
-      {% endfor %} -->
-    </ul>
-  </div>
-</div>
 <div class="articles">
   {% for article in articles %}
   <article>
@@ -49,18 +10,5 @@
   </article>
   {% endfor %}
 </div>
-<script>
-  // for sources
-  const openSourcesDialogButton = document.getElementById("openSourcesDialog");
-  const closeDialogSourcesButton = document.getElementById("closeSourcesDialog");
-  const filterSourcesDialog = document.getElementById("filterSourcesDialog");
 
-  openSourcesDialogButton.addEventListener("click", () => {
-    filterSourcesDialog.showModal();
-  });
-
-  closeDialogSourcesButton.addEventListener("click", () => {
-    filterSourcesDialog.close();
-  });
-</script>
 {% endblock %}
