@@ -56,7 +56,7 @@
     name="is_rss_{{ article[1].title | escape }}" 
     {% if article[3] %}checked{% endif %} 
     disabled>    
-    <!-- <p>Author: {{ article[1]}}</p> -->
+    <p>Google Search: {{ article[4] or "No" }}</p>
   </article>
   {% endfor %}
 </div>

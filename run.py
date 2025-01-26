@@ -103,6 +103,7 @@ def get_articles(queries=[""]):
                             article.published_parsed or article.published
                         ),
                         False,
+                        query,
                     )
                 )
     except Exception as e:
