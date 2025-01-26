@@ -56,6 +56,7 @@ def parse_feed(feed_url):
 
 def get_articles(queries=[""]):
     articles = []
+    seen_titles = set()  # Create a set to store seen titles
 
     for source, feed in RSS_FEEDS.items():
         try:
@@ -74,42 +75,47 @@ def get_articles(queries=[""]):
                         True,
                     )
                 )
+                seen_titles.add(entry.title.lower())  # Add the title to the set
         except Exception as e:
             print(f"Error fetching articles from {source}: {e}")
 
-    for source, feed in WEBSITES.items():
-        try:
-            print(f"Fetching {source} feed from {feed}")
-            feed_all = find_rss_links(feed)
-            for feed in feed_all:
-                print(f"Fetching articles from {feed}")
-                parsed_articles = parse_feed(feed)
-                articles.extend(
-                    [
-                        (source, entry, date_published)
-                        for entry, date_published in parsed_articles
-                        if entry is not None
-                    ]
-                )
-        except Exception as e:
-            print(f"Error fetching articles from {source}: {e}")
+    # for source, feed in WEBSITES.items():
+    #     try:
+    #         print(f"Fetching {source} feed from {feed}")
+    #         feed_all = find_rss_links(feed)
+    #         for feed in feed_all:
+    #             print(f"Fetching articles from {feed}")
+    #             parsed_articles = parse_feed(feed)
+    #             articles.extend(
+    #                 [
+    #                     (source, entry, date_published)
+    #                     for entry, date_published in parsed_articles
+    #                     if entry is not None
+    #                 ]
+    #             )
+    #     except Exception as e:
+    #         print(f"Error fetching articles from {source}: {e}")
 
     try:
         # Fetch news articles for each query
         for query in queries:
             news_articles = search_news(query)
             for article in news_articles:
-                articles.append(
-                    (
-                        f"Google News: {article.source.title} ",
-                        article,
-                        format_published_date(
-                            article.published_parsed or article.published
-                        ),
-                        False,
-                        query,
+                if (
+                    article.title.lower() not in seen_titles
+                ):  # Check if the title is already seen
+                    seen_titles.add(article.title.lower())  # Add the title to the set
+                    articles.append(
+                        (
+                            f"Google News: {article.source.title} ",
+                            article,
+                            format_published_date(
+                                article.published_parsed or article.published
+                            ),
+                            False,
+                            query,
+                        )
                     )
-                )
     except Exception as e:
         print(e)
     return articles
@@ -134,7 +140,7 @@ def index():
         articles = [article for article in articles if article[0] == selected_source]
 
     page = request.args.get("page", 1, type=int)
-    per_page = 20
+    per_page = 19
     total_articles = len(articles)
     start = (page - 1) * per_page
     end = start + per_page
