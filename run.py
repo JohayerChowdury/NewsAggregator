@@ -14,7 +14,7 @@ app = Flask(__name__)
 
 # Add the appropriate RSS feeds
 RSS_FEEDS = {
-    # "Canadian Mortgage Trends": "https://www.canadianmortgagetrends.com/feed/",  # works
+    "Canadian Mortgage Trends": "https://www.canadianmortgagetrends.com/feed/",  # works
     "Google News: Canadian Accessory Dwelling Unit": "https://news.google.com/rss/search?q=canadian%20accessory%20dwelling%20unit&hl=en-CA&gl=CA&ceid=CA%3Aen",  # works
     # "Government of Ontario: All News": "https://news.ontario.ca/newsroom/en/rss/allnews.rss",  # works
     # "Government of Canada: Finance": "https://api.io.canada.ca/io-server/gc/news/en/v2?dept=departmentfinance&type=newsreleases&sort=publishedDate&orderBy=desc&publishedDate%3E=2020-08-09&pick=100&format=atom&atomtitle=Canada%20News%20Centre%20-%20Department%20of%20Finance%20Canada%20-%20News%20Releases" # doesnt work,
@@ -64,7 +64,11 @@ def get_articles(queries=[""]):
             for entry, date_published in parsed_articles:
                 articles.append(
                     (
-                        f"Google News: {entry.source.title} ",
+                        (
+                            f"Google News: {entry.source.title} "
+                            if source.startswith("Google News")
+                            else source
+                        ),
                         entry,
                         date_published,
                         True,
@@ -120,6 +124,10 @@ def index():
     if sort_date:
         articles.sort(key=lambda x: x[2], reverse=(sort_date == "desc"))
 
+    sort_title = request.args.get("sort_title")
+    if sort_title:
+        articles.sort(key=lambda x: x[1].title, reverse=(sort_title == "desc"))
+
     sources = sorted(list(set(article[0] for article in articles)))
     selected_source = request.args.get("source")
     if selected_source:
@@ -140,6 +148,7 @@ def index():
         sources=sources,
         selected_sources=selected_source,
         sort_date=sort_date,
+        sort_title=sort_title,
     )
 
 
