@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <title>Canadian Financial News Hub</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+    <script src="{{ url_for('static', filename='scripts.js') }}" defer></script>
   </head>
   <body>
     <header>
@@ -13,6 +14,9 @@
         <button type="submit">Search</button>
       </form>
     </header>
+
+    <!-- filters -->
+    {% block filters %}
     <div class="filters">
       <h3>Filter:</h3>
       <button id="openSourcesDialog">By Source</button>
@@ -25,6 +29,10 @@
         </ul>
       </dialog>
     </div>
+    {% endblock %}
+
+    <!-- sorting -->
+    {% block sorting %}
     <div class="sorting">
       <h2>Sort by:</h2>
 
@@ -36,77 +44,46 @@
       <button id="sortTitleAsc">A → Z</button>
       <button id="sortTitleDesc">Z → A</button>
     </div>
+    {% endblock %}
+
+    <!-- queries -->
     <div class="queries">
-      <h3>Searching following queries:</h3>
-      <div class="google-news">
-        <h4>from Google News</h4>
-        <ul>
-          {% for query in queries %}
-          <li>{{ query }}</li>
-          {% endfor %}
-        </ul>
-      </div>
-      <div class="rss-feeds">
-        <h4>from these RSS feeds</h4>
-        <!-- <ul>
-          {% for query in queries %}
-          <li>{{ query }}</li>
-          {% endfor %}
-        </ul> -->
-      </div>
-      <div class="websites">
-        <h4>from these websites</h4>
-        <ul>
-          <!-- {% for query in queries %}
-          <li>{{ query }}</li>
-          {% endfor %} -->
-        </ul>
+      <div id="queriesDescription">
+        <button id="openQueriesDescriptionDialog">Searching...</button>
+        <dialog id="queriesDescriptionDialog">
+          <button id="closeQueriesDescriptionDialog">Close</button>
+          <div id="description">
+            <h3>Searching the following:</h3>
+            <div class="google-news">
+              <h4>from Google News</h4>
+              <ul>
+                {% for query in queries %}
+                <li>{{ query }}</li>
+                {% endfor %}
+              </ul>
+            </div>
+            <div class="rss-feeds">
+              <h4>from these RSS feeds</h4>
+              <!-- <ul>
+            {% for query in queries %}
+            <li>{{ query }}</li>
+            {% endfor %}
+          </ul> -->
+            </div>
+            <div class="websites">
+              <h4>from these websites</h4>
+              <ul>
+                <!-- {% for query in queries %}
+            <li>{{ query }}</li>
+            {% endfor %} -->
+              </ul>
+            </div>
+          </div>
+        </dialog>
       </div>
     </div>
+
+    <!-- what index and search_results use -->
     {% block content %}{% endblock %}
   </body>
 </html>
-<script>
-  // for sources
-  const openSourcesDialogButton = document.getElementById("openSourcesDialog");
-  const closeDialogSourcesButton = document.getElementById("closeSourcesDialog");
-  const filterSourcesDialog = document.getElementById("filterSourcesDialog");
-
-  openSourcesDialogButton.addEventListener("click", () => {
-    filterSourcesDialog.showModal();
-  });
-
-  closeDialogSourcesButton.addEventListener("click", () => {
-    filterSourcesDialog.close();
-  });
-
-  // Sorting by date
-  document.getElementById("sortDateAsc").addEventListener("click", () => {
-    const urlParams = new URLSearchParams(window.location.search);
-    urlParams.set("sort_date", "asc");
-    urlParams.delete("sort_title"); // Clear other sorting parameters
-    window.location.search = urlParams.toString();
-  });
-
-  document.getElementById("sortDateDesc").addEventListener("click", () => {
-    const urlParams = new URLSearchParams(window.location.search);
-    urlParams.set("sort_date", "desc");
-    urlParams.delete("sort_title"); // Clear other sorting parameters
-    window.location.search = urlParams.toString();
-  });
-
-  // Sorting by title
-  document.getElementById("sortTitleAsc").addEventListener("click", () => {
-    const urlParams = new URLSearchParams(window.location.search);
-    urlParams.set("sort_title", "asc");
-    urlParams.delete("sort_date"); // Clear other sorting parameters
-    window.location.search = urlParams.toString();
-  });
-
-  document.getElementById("sortTitleDesc").addEventListener("click", () => {
-    const urlParams = new URLSearchParams(window.location.search);
-    urlParams.set("sort_title", "desc");
-    urlParams.delete("sort_date"); // Clear other sorting parameters
-    window.location.search = urlParams.toString();
-  });
-</script>
