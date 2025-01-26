@@ -50,6 +50,12 @@
     <h2><a href="{{ article[1].link or article[1].url }}">{{ article[1].title }}</a></h2>
     <p>Published: {{ article[2] }}</p>
     <p>Source: {{ article[0] }}</p>
+    <input 
+    type="checkbox" 
+    id="{{ article[1].title | escape }}" 
+    name="is_rss_{{ article[1].title | escape }}" 
+    {% if article[3] %}checked{% endif %} 
+    disabled>    
     <!-- <p>Author: {{ article[1]}}</p> -->
   </article>
   {% endfor %}
