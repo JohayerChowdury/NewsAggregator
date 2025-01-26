@@ -12,10 +12,10 @@
   </dialog>
 </div>
 <div class="sorting">
-  <h2>Sort by:</h>
-    <h3>Date:</h3>
-    <button id="sortDateAsc">Ascending</button>
-    <button id="sortDateDesc">Descending</button>
+  <h2>Sort by:</h2>
+  <h3>Date:</h3>
+  <button id="sortDateAsc">Ascending</button>
+  <button id="sortDateDesc">Descending</button>
 </div>
 <div class="queries">
   <h3>Searching following queries:</h3>
@@ -50,22 +50,30 @@
     <h2><a href="{{ article[1].link or article[1].url }}">{{ article[1].title }}</a></h2>
     <p>Published: {{ article[2] }}</p>
     <p>Source: {{ article[0] }}</p>
-    <input 
-    type="checkbox" 
-    id="{{ article[1].title | escape }}" 
-    name="is_rss_{{ article[1].title | escape }}" 
-    {% if article[3] %}checked{% endif %} 
-    disabled>    
+    <input
+      type="checkbox"
+      id="{{ article[1].title | escape }}"
+      name="is_rss_{{ article[1].title | escape }}"
+      {%
+      if
+      article[3]
+      %}checked{%
+      endif
+      %}
+      disabled />
     <p>Google Search: {{ article[4] or "No" }}</p>
   </article>
   {% endfor %}
 </div>
 <div class="pagination">
   {% if page > 1 %}
-  <a href="{{ url_for('index', page=page-1, sort_date=sort_date, source=selected_sources) }}">Previous</a>
-  {% endif %}
-  {% if page < total_pages %}
-  <a href="{{ url_for('index', page=page+1, sort_date=sort_date, source=selected_sources) }}">Next</a>
+  <a href="{{ url_for('index', page=page-1, sort_date=sort_date, source=selected_sources) }}"
+    >Previous</a
+  >
+  {% endif %} {% if page < total_pages %}
+  <a href="{{ url_for('index', page=page+1, sort_date=sort_date, source=selected_sources) }}"
+    >Next</a
+  >
   {% endif %}
 </div>
 <script>
@@ -85,13 +93,13 @@
   // for sorting
   document.getElementById("sortDateAsc").addEventListener("click", () => {
     const urlParams = new URLSearchParams(window.location.search);
-    urlParams.set('sort_date', 'asc');
+    urlParams.set("sort_date", "asc");
     window.location.search = urlParams.toString();
   });
 
   document.getElementById("sortDateDesc").addEventListener("click", () => {
     const urlParams = new URLSearchParams(window.location.search);
-    urlParams.set('sort_date', 'desc');
+    urlParams.set("sort_date", "desc");
     window.location.search = urlParams.toString();
   });
 </script>
