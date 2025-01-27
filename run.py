@@ -138,13 +138,13 @@ def get_articles(queries=[""]):
                     )
     except Exception as e:
         print(e)
-    return articles
+    return articles or []
 
 
 @app.route("/")
 def index():
 
-    articles = get_articles(GOOGLE_NEWS_SEARCH_QUERIES) or []
+    articles = get_articles(GOOGLE_NEWS_SEARCH_QUERIES)
 
     sort_date = request.args.get("sort_date")
     if sort_date:
@@ -154,37 +154,37 @@ def index():
     if sort_title:
         articles.sort(key=lambda x: x[1].title, reverse=(sort_title == "desc"))
 
-    sources = sorted(list(set(article[0] for article in articles)))
+    unfiltered_sources = sorted(list(set(article[0] for article in articles)))
     selected_source = request.args.get("source")
     if selected_source:
         articles = [article for article in articles if article[0] == selected_source]
 
+    # pagination
     page = request.args.get("page", 1, type=int)
     per_page = 19
     total_articles = len(articles)
     start = (page - 1) * per_page
     end = start + per_page
     paginated_articles = articles[start:end]
+
     return render_template(
         "index.html",
-        queries=GOOGLE_NEWS_SEARCH_QUERIES,
         articles=paginated_articles,
-        page=page,
-        total_pages=total_articles // per_page + 1,
-        sources=sources,
+        sources=unfiltered_sources,
         selected_sources=selected_source,
         sort_date=sort_date,
         sort_title=sort_title,
+        page=page,
+        total_pages=total_articles // per_page + 1,
+        google_queries=GOOGLE_NEWS_SEARCH_QUERIES,
     )
 
 
 @app.route("/search")
 def search():
-    # TODO: need to make searched articles filterable by source
     query = request.args.get("query")
-    selected_source = request.args.get("source")
 
-    articles = get_articles(GOOGLE_NEWS_SEARCH_QUERIES) or []
+    articles = get_articles(GOOGLE_NEWS_SEARCH_QUERIES)
 
     results = [
         article
@@ -192,18 +192,39 @@ def search():
         if query.lower() in article[1].title.lower()
         or query.lower() in article[1].summary.lower()
     ]
-    sources = sorted(list(set(article[0] for article in results)))
 
+    sort_date = request.args.get("sort_date")
+    if sort_date:
+        results.sort(key=lambda x: x[2], reverse=(sort_date == "desc"))
+
+    sort_title = request.args.get("sort_title")
+    if sort_title:
+        results.sort(key=lambda x: x[1].title, reverse=(sort_title == "desc"))
+
+    unfiltered_sources = sorted(list(set(article[0] for article in results)))
+    selected_source = request.args.get("source")
     if selected_source:
-        articles = [article for article in results if article[0] == selected_source]
+        results = [article for article in results if article[0] == selected_source]
+
+    # pagination
+    page = request.args.get("page", 1, type=int)
+    per_page = 19
+    total_articles = len(results)
+    start = (page - 1) * per_page
+    end = start + per_page
+    paginated_articles = results[start:end]
 
     return render_template(
         "search_results.html",
-        queries=GOOGLE_NEWS_SEARCH_QUERIES,
-        articles=results,
+        articles=paginated_articles,
         query=query,
-        sources=sources,
+        sources=unfiltered_sources,
         selected_sources=selected_source,
+        sort_date=sort_date,
+        sort_title=sort_title,
+        page=page,
+        total_pages=total_articles // per_page + 1,
+        google_queries=GOOGLE_NEWS_SEARCH_QUERIES,
     )
 
 

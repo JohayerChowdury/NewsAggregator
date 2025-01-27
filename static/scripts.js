@@ -29,6 +29,7 @@ document.getElementById("sortDateAsc").addEventListener("click", () => {
   const urlParams = new URLSearchParams(window.location.search);
   urlParams.set("sort_date", "asc");
   urlParams.delete("sort_title"); // Clear other sorting parameters
+  urlParams.delete("page"); // Clear page number
   window.location.search = urlParams.toString();
 });
 
@@ -36,6 +37,7 @@ document.getElementById("sortDateDesc").addEventListener("click", () => {
   const urlParams = new URLSearchParams(window.location.search);
   urlParams.set("sort_date", "desc");
   urlParams.delete("sort_title"); // Clear other sorting parameters
+  urlParams.delete("page"); // Clear page number
   window.location.search = urlParams.toString();
 });
 
@@ -44,6 +46,7 @@ document.getElementById("sortTitleAsc").addEventListener("click", () => {
   const urlParams = new URLSearchParams(window.location.search);
   urlParams.set("sort_title", "asc");
   urlParams.delete("sort_date"); // Clear other sorting parameters
+  urlParams.delete("page"); // Clear page number
   window.location.search = urlParams.toString();
 });
 
@@ -51,5 +54,6 @@ document.getElementById("sortTitleDesc").addEventListener("click", () => {
   const urlParams = new URLSearchParams(window.location.search);
   urlParams.set("sort_title", "desc");
   urlParams.delete("sort_date"); // Clear other sorting parameters
+  urlParams.delete("page"); // Clear page number
   window.location.search = urlParams.toString();
 });

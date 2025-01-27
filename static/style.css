@@ -109,17 +109,23 @@ article p {
   margin: 20px auto;
   padding: 0 20px;
   max-width: 800px;
-  border: 1px solid #ddd;
 }
 
 .filters {
   margin: 20px auto;
-  padding: 0 20px;
+  padding: 20px 20px;
   max-width: 800px;
+  border: 1px solid #ddd;
 }
 
 .sorting {
   margin: 20px auto;
-  padding: 0 20px;
+  padding: 20px 20px;
   max-width: 800px;
+  border: 1px solid #ddd;
+}
+
+.sorting div {
+  display: inline-block;
+  margin-right: 20px;
 }

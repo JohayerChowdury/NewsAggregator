@@ -10,46 +10,15 @@
     <header>
       <h1>Highline Beta's RSS Aggregator</h1>
       <form action="{{ url_for('search') }}" method="GET">
-        <input type="text" name="query" placeholder="Search For Keyword" />
+        <input type="text" name="query" placeholder="Search For Keyword" value="{{ query }}" />
         <button type="submit">Search</button>
       </form>
     </header>
 
-    <!-- filters -->
-    {% block filters %}
-    <div class="filters">
-      <h3>Filter:</h3>
-      <button id="openSourcesDialog">By Source</button>
-      <dialog id="filterSourcesDialog">
-        <button id="closeSourcesDialog">Close</button>
-        <ul>
-          {% for source in sources %}
-          <li><a href="{{ url_for('index', source=source) }}">{{ source }}</a></li>
-          {% endfor %}
-        </ul>
-      </dialog>
-    </div>
-    {% endblock %}
-
-    <!-- sorting -->
-    {% block sorting %}
-    <div class="sorting">
-      <h2>Sort by:</h2>
-
-      <h3>Date:</h3>
-      <button id="sortDateAsc">Ascending</button>
-      <button id="sortDateDesc">Descending</button>
-
-      <h3>Title:</h3>
-      <button id="sortTitleAsc">A → Z</button>
-      <button id="sortTitleDesc">Z → A</button>
-    </div>
-    {% endblock %}
-
     <!-- queries -->
     <div class="queries">
       <div id="queriesDescription">
-        <button id="openQueriesDescriptionDialog">Searching...</button>
+        <button id="openQueriesDescriptionDialog">Searching the following feeds...</button>
         <dialog id="queriesDescriptionDialog">
           <button id="closeQueriesDescriptionDialog">Close</button>
           <div id="description">
@@ -57,7 +26,7 @@
             <div class="google-news">
               <h4>from Google News</h4>
               <ul>
-                {% for query in queries %}
+                {% for query in google_queries %}
                 <li>{{ query }}</li>
                 {% endfor %}
               </ul>
@@ -65,17 +34,17 @@
             <div class="rss-feeds">
               <h4>from these RSS feeds</h4>
               <!-- <ul>
-            {% for query in queries %}
-            <li>{{ query }}</li>
-            {% endfor %}
-          </ul> -->
+                {% for query in queries %}
+                <li>{{ query }}</li>
+                {% endfor %}
+              </ul> -->
             </div>
             <div class="websites">
               <h4>from these websites</h4>
               <ul>
                 <!-- {% for query in queries %}
-            <li>{{ query }}</li>
-            {% endfor %} -->
+                <li>{{ query }}</li>
+                {% endfor %} -->
               </ul>
             </div>
           </div>
@@ -83,7 +52,50 @@
       </div>
     </div>
 
+    <!-- filters -->
+    <div class="filters">
+      <h2>Filter:</h2>
+      <button id="openSourcesDialog">By Source</button>
+      <dialog id="filterSourcesDialog">
+        <button id="closeSourcesDialog">Close</button>
+        <ul>
+          {% for source in sources %}
+          <li>
+            <a
+              href="{% if query %}{{ url_for('search', source=source, query=query) }}{% else %}{{ url_for('index', source=source) }}{% endif %}">
+              {{ source }}
+            </a>
+          </li>
+          {% endfor %}
+        </ul>
+      </dialog>
+    </div>
+
+    <!-- sorting -->
+    <div class="sorting">
+      <h2>Sort by:</h2>
+
+      <div>
+        <h3>Date:</h3>
+        <button id="sortDateAsc">Oldest</button>
+        <button id="sortDateDesc">Most Recent</button>
+      </div>
+
+      <div>
+        <h3>Title:</h3>
+        <button id="sortTitleAsc">A → Z</button>
+        <button id="sortTitleDesc">Z → A</button>
+      </div>
+    </div>
+
     <!-- what index and search_results use -->
     {% block content %}{% endblock %}
+
+    <!-- pagination -->
+    {% block pagination %}{% endblock %}
+
+    <footer>
+      <p>© 2025 Highline Beta</p>
+    </footer>
   </body>
 </html>
