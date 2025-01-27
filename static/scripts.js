@@ -11,6 +11,19 @@ closeDialogSourcesButton.addEventListener("click", () => {
   filterSourcesDialog.close();
 });
 
+// for google_searches dialog filter
+const openGoogleSearchesDialogButton = document.getElementById("openGoogleSearchDialog");
+const closeDialogGoogleSearchesButton = document.getElementById("closeGoogleSearchDialog");
+const googleSearchesDialog = document.getElementById("filterGoogleSearchDialog");
+
+openGoogleSearchesDialogButton.addEventListener("click", () => {
+  googleSearchesDialog.showModal();
+});
+
+closeDialogGoogleSearchesButton.addEventListener("click", () => {
+  googleSearchesDialog.close();
+});
+
 // for queries description dialog
 const openQueriesDialogButton = document.getElementById("openQueriesDescriptionDialog");
 const closeDialogQueriesButton = document.getElementById("closeQueriesDescriptionDialog");

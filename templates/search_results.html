@@ -29,12 +29,12 @@
 <div class="pagination">
   {% if page > 1 %}
   <a
-    href="{{ url_for('search', query=query, page=page-1, sort_date=sort_date, sort_title=sort_title, source=selected_sources) }}"
+    href="{{ url_for('search', query=query, page=page-1, sort_date=sort_date, sort_title=sort_title, source=selected_sources, google_search=selected_google_search) }}"
     >Previous</a
   >
   {% endif %} {% if page < total_pages %}
   <a
-    href="{{ url_for('search', query=query, page=page+1, sort_date=sort_date, sort_title=sort_title, source=selected_sources) }}"
+    href="{{ url_for('search', query=query, page=page+1, sort_date=sort_date, sort_title=sort_title, source=selected_sources, google_search=selected_google_search) }}"
     >Next</a
   >
   {% endif %}

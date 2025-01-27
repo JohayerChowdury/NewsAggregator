@@ -31,20 +31,20 @@
                 {% endfor %}
               </ul>
             </div>
-            <div class="rss-feeds">
-              <h4>from these RSS feeds</h4>
+            <div class="websites">
+              <h4>from these websites</h4>
               <!-- <ul>
                 {% for query in queries %}
                 <li>{{ query }}</li>
                 {% endfor %}
               </ul> -->
             </div>
-            <div class="websites">
-              <h4>from these websites</h4>
+            <div class="rss-feeds">
+              <h4>from these RSS feeds</h4>
               <ul>
-                <!-- {% for query in queries %}
-                <li>{{ query }}</li>
-                {% endfor %} -->
+                {% for feed in rss_feeds %}
+                <li>{{ feed }}</li>
+                {% endfor %}
               </ul>
             </div>
           </div>
@@ -55,20 +55,40 @@
     <!-- filters -->
     <div class="filters">
       <h2>Filter:</h2>
-      <button id="openSourcesDialog">By Source</button>
-      <dialog id="filterSourcesDialog">
-        <button id="closeSourcesDialog">Close</button>
-        <ul>
-          {% for source in sources %}
-          <li>
-            <a
-              href="{% if query %}{{ url_for('search', source=source, query=query) }}{% else %}{{ url_for('index', source=source) }}{% endif %}">
-              {{ source }}
-            </a>
-          </li>
-          {% endfor %}
-        </ul>
-      </dialog>
+
+      <div class="sourcesFilter">
+        <button id="openSourcesDialog">By Source</button>
+        <dialog id="filterSourcesDialog">
+          <button id="closeSourcesDialog">Close</button>
+          <ul>
+            {% for source in sources %}
+            <li>
+              <a
+                href="{% if query %}{{ url_for('search', source=source, google_search=google_search, query=query) }}{% else %}{{ url_for('index', source=source, google_search=google_search) }}{% endif %}">
+                {{ source }}
+              </a>
+            </li>
+            {% endfor %}
+          </ul>
+        </dialog>
+      </div>
+
+      <div class="googleSearchFilter">
+        <button id="openGoogleSearchDialog">By Google Search</button>
+        <dialog id="filterGoogleSearchDialog">
+          <button id="closeGoogleSearchDialog">Close</button>
+          <ul>
+            {% for search in google_queries %}
+            <li>
+              <a
+                href="{% if query %}{{ url_for('search', google_search=search, query=query) }}{% else %}{{ url_for('index', google_search=search) }}{% endif %}">
+                {{ search }}
+              </a>
+            </li>
+            {% endfor %}
+          </ul>
+        </dialog>
+      </div>
     </div>
 
     <!-- sorting -->
