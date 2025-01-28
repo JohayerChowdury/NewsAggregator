@@ -16,7 +16,7 @@ app = Flask(__name__)
 RSS_FEEDS = {
     # "Canadian Mortgage Trends": "https://www.canadianmortgagetrends.com/feed/",  # works
     "Google News: Canadian Accessory Dwelling Unit": "https://news.google.com/rss/search?q=canadian%20accessory%20dwelling%20unit&hl=en-CA&gl=CA&ceid=CA%3Aen",  # works
-    # "Government of Ontario: All News": "https://news.ontario.ca/newsroom/en/rss/allnews.rss",  # works
+    "Government of Ontario: All News": "https://news.ontario.ca/newsroom/en/rss/allnews.rss",  # works
     # "Government of Canada: Finance": "https://api.io.canada.ca/io-server/gc/news/en/v2?dept=departmentfinance&type=newsreleases&sort=publishedDate&orderBy=desc&publishedDate%3E=2020-08-09&pick=100&format=atom&atomtitle=Canada%20News%20Centre%20-%20Department%20of%20Finance%20Canada%20-%20News%20Releases",  # doesnt work,
     # TODO: look into podcasts and how to parse them
     "Podcast: The Hidden Upside: Real Estate": "https://feeds.libsyn.com/433605/rss",
@@ -29,10 +29,11 @@ WEBSITES = {
     # "Flexobuild News": "https://flexobuild.com/media" # not works
 }
 
+# TODO: Yunji provided financing glossary, look into those terms and add them here
 GOOGLE_NEWS_SEARCH_QUERIES = [
-    "Canadian accessory dwelling unit",  # NOTE: looks like adding "Canadian" doesn't work well
-    "Canadian mortgage regulations",
-    "Canadian zoning laws in Toronto",
+    # "Canadian accessory dwelling unit",  # NOTE: looks like adding "Canadian" doesn't work well
+    # "Canadian mortgage regulations",
+    # "Canadian zoning laws in Toronto",
     # "zoning laws",
     # "accessory dwelling unit",
     # "mortgage regulations",
