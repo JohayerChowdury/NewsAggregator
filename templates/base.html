@@ -24,7 +24,7 @@
           <div id="description">
             <h3>Searching the following:</h3>
             <div class="google-news">
-              <h4>from Google News</h4>
+              <h4>from Google News:</h4>
               <ul>
                 {% for query in google_queries %}
                 <li>{{ query }}</li>
@@ -32,7 +32,7 @@
               </ul>
             </div>
             <div class="websites">
-              <h4>from these websites</h4>
+              <h4>from these websites:</h4>
               <!-- <ul>
                 {% for query in queries %}
                 <li>{{ query }}</li>
@@ -40,7 +40,7 @@
               </ul> -->
             </div>
             <div class="rss-feeds">
-              <h4>from these RSS feeds</h4>
+              <h4>from these RSS feeds:</h4>
               <ul>
                 {% for feed in rss_feeds %}
                 <li>{{ feed }}</li>
@@ -49,6 +49,9 @@
             </div>
           </div>
         </dialog>
+      </div>
+      <div id="totalNumberOfPagesOfArticlesFound">
+        Found {{ total_pages }} total pages of articles.
       </div>
     </div>
 
