@@ -17,7 +17,7 @@
 
 ### :bangbang: For new changes to the app (for now)
 
-#### 2. **Download the Project**
+#### 2. **Download the Project (If you don't have Git installed)**
 
 - Open your browser and visit the GitHub link I provided for the project.
 - Click the green **Code** button and select **Download ZIP**.
