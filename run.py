@@ -15,12 +15,12 @@ app = Flask(__name__)
 # Add the appropriate RSS feeds
 RSS_FEEDS = {
     # "Canadian Mortgage Trends": "https://www.canadianmortgagetrends.com/feed/",  # works
-    # "Google News: Canadian Accessory Dwelling Unit": "https://news.google.com/rss/search?q=canadian%20accessory%20dwelling%20unit&hl=en-CA&gl=CA&ceid=CA%3Aen",  # works
+    "Google News: Canadian Accessory Dwelling Unit": "https://news.google.com/rss/search?q=canadian%20accessory%20dwelling%20unit&hl=en-CA&gl=CA&ceid=CA%3Aen",  # works
     # "Government of Ontario: All News": "https://news.ontario.ca/newsroom/en/rss/allnews.rss",  # works
     # "Government of Canada: Finance": "https://api.io.canada.ca/io-server/gc/news/en/v2?dept=departmentfinance&type=newsreleases&sort=publishedDate&orderBy=desc&publishedDate%3E=2020-08-09&pick=100&format=atom&atomtitle=Canada%20News%20Centre%20-%20Department%20of%20Finance%20Canada%20-%20News%20Releases",  # doesnt work,
     # TODO: look into podcasts and how to parse them
-    # "The Hidden Upside: Real Estate Podcast": "https://feeds.libsyn.com/433605/rss",
-    # "The Real Estate REplay Podcast": "https://feeds.buzzsprout.com/1962859.rss"
+    "Podcast: The Hidden Upside: Real Estate": "https://feeds.libsyn.com/433605/rss",
+    "Podcast: The Real Estate REplay": "https://feeds.buzzsprout.com/1962859.rss",
 }
 
 # TODO: stay away from company websites (have sales objectives that have "vendor" stuff)
@@ -30,9 +30,9 @@ WEBSITES = {
 }
 
 GOOGLE_NEWS_SEARCH_QUERIES = [
-    # "Canadian accessory dwelling unit",  # NOTE: looks like adding "Canadian" doesn't work well
-    # "Canadian mortgage regulations",
-    # "Canadian zoning laws in Toronto",
+    "Canadian accessory dwelling unit",  # NOTE: looks like adding "Canadian" doesn't work well
+    "Canadian mortgage regulations",
+    "Canadian zoning laws in Toronto",
     # "zoning laws",
     # "accessory dwelling unit",
     # "mortgage regulations",
@@ -158,16 +158,16 @@ def index():
 
     # filters
     unfiltered_sources = sorted(list(set(article[0] for article in articles)))
-    selected_source = request.args.get("source")
-    if selected_source:
-        articles = [article for article in articles if article[0] == selected_source]
+    selected_sources = request.args.getlist("source")
+    if selected_sources:
+        articles = [article for article in articles if article[0] in selected_sources]
 
-    selected_google_search = request.args.get("google_search")
-    if selected_google_search:
+    selected_google_searches = request.args.getlist("google_search")
+    if selected_google_searches:
         articles = [
             article
             for article in articles
-            if article[4] and article[4] == selected_google_search
+            if article[4] and article[4] in selected_google_searches
         ]
 
     # pagination
@@ -182,8 +182,8 @@ def index():
         "index.html",
         articles=paginated_articles,
         sources=unfiltered_sources,
-        selected_sources=selected_source,
-        selected_google_search=selected_google_search,
+        selected_sources=selected_sources,
+        selected_google_search=selected_google_searches,
         sort_date=sort_date,
         sort_title=sort_title,
         page=page,
@@ -195,7 +195,7 @@ def index():
 
 @app.route("/search")
 def search():
-    query = request.args.get("query")
+    query = request.args.get("query") or ""
 
     articles = get_articles(GOOGLE_NEWS_SEARCH_QUERIES)
 
@@ -217,16 +217,16 @@ def search():
 
     # filters
     unfiltered_sources = sorted(list(set(article[0] for article in results)))
-    selected_source = request.args.get("source")
-    if selected_source:
-        results = [article for article in results if article[0] == selected_source]
+    selected_sources = request.args.getlist("source")
+    if selected_sources:
+        results = [article for article in results if article[0] in selected_sources]
 
-    selected_google_search = request.args.get("google_search")
-    if selected_google_search:
+    selected_google_searches = request.args.getlist("google_search")
+    if selected_google_searches:
         articles = [
             article
             for article in articles
-            if article[4] and article[4] == selected_google_search
+            if article[4] and article[4] in selected_google_searches
         ]
 
     # pagination
@@ -242,8 +242,8 @@ def search():
         articles=paginated_articles,
         query=query,
         sources=unfiltered_sources,
-        selected_sources=selected_source,
-        selected_google_search=selected_google_search,
+        selected_sources=selected_sources,
+        selected_google_search=selected_google_searches,
         sort_date=sort_date,
         sort_title=sort_title,
         page=page,

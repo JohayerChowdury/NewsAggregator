@@ -9,7 +9,7 @@
   <body>
     <header>
       <h1>Highline Beta's RSS Aggregator</h1>
-      <form action="{{ url_for('search') }}" method="GET">
+      <form id="searchForm" action="{{ url_for('search') }}" method="GET">
         <input type="text" name="query" placeholder="Search For Keyword" value="{{ query }}" />
         <button type="submit">Search</button>
       </form>
@@ -60,16 +60,31 @@
         <button id="openSourcesDialog">By Source</button>
         <dialog id="filterSourcesDialog">
           <button id="closeSourcesDialog">Close</button>
-          <ul>
-            {% for source in sources %}
-            <li>
-              <a
-                href="{% if query %}{{ url_for('search', source=source, google_search=google_search, query=query) }}{% else %}{{ url_for('index', source=source, google_search=google_search) }}{% endif %}">
+          <form
+            id="sourceFilterForm"
+            method="GET"
+            action="{% if query %}{{ url_for('search') }}{% else %}{{ url_for('index') }}{% endif %}">
+            <ul>
+              {% for source in sources %}
+              <li>
+                <input
+                  type="checkbox"
+                  name="source"
+                  value="{{ source }}"
+                  {%
+                  if
+                  source
+                  in
+                  selected_sources
+                  %}checked{%
+                  endif
+                  %} />
                 {{ source }}
-              </a>
-            </li>
-            {% endfor %}
-          </ul>
+              </li>
+              {% endfor %}
+            </ul>
+            <button type="submit">Apply Filters</button>
+          </form>
         </dialog>
       </div>
 
@@ -77,16 +92,31 @@
         <button id="openGoogleSearchDialog">By Google Search</button>
         <dialog id="filterGoogleSearchDialog">
           <button id="closeGoogleSearchDialog">Close</button>
-          <ul>
-            {% for search in google_queries %}
-            <li>
-              <a
-                href="{% if query %}{{ url_for('search', google_search=search, query=query) }}{% else %}{{ url_for('index', google_search=search) }}{% endif %}">
+          <form
+            method="GET"
+            action="{% if query %}{{ url_for('search', query=query) }}{% else %}{{ url_for('index') }}{% endif %}">
+            >
+            <ul>
+              {% for search in google_queries %}
+              <li>
+                <input
+                  type="checkbox"
+                  name="google_search"
+                  value="{{ search }}"
+                  {%
+                  if
+                  search
+                  in
+                  selected_google_searches
+                  %}checked{%
+                  endif
+                  %} />
                 {{ search }}
-              </a>
-            </li>
-            {% endfor %}
-          </ul>
+              </li>
+              {% endfor %}
+            </ul>
+            <button type="submit">Apply Filters</button>
+          </form>
         </dialog>
       </div>
     </div>
