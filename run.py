@@ -1,7 +1,7 @@
 import feedparser
 import ssl
 
-# import json
+import json
 
 from flask import Flask, render_template, request
 
@@ -9,6 +9,20 @@ from server.utils import format_published_date, find_rss_links
 
 # from server.utils.news_api import search_news_articles
 from server.utils.pygooglenews import search_news, get_news_search_dates
+
+from server.utils.text_processing import clean_text
+
+from server.utils.ml_publication import analyze_themes, label_themes, generate_jot_notes
+
+# from server.utils.ml_publication import (
+#     load_documents,
+#     split_documents,
+#     create_vector_store,
+# )
+
+import pandas as pd
+
+import ollama
 
 app = Flask(__name__)
 
@@ -63,90 +77,110 @@ def parse_feed(feed_url):
         print(f"Error parsing feed {feed_url}: {parsed_feed.bozo_exception}")
     else:
         for entry in parsed_feed.entries:
-            # TODO: look into only getting articles from the last 6 months
-            # _, six_months_ago_date = get_news_search_dates()
             date_published = format_published_date(
                 entry.get("published_parsed") or entry.get("published")
             )
-            # if date_published < six_months_ago_date:
-            #     continue
             articles.append((entry, date_published))
-    print(f"Total number of articles from source  {feed_url}: {len(articles)}")
     return articles
 
 
-def get_articles(queries=[""]):
-    articles = []
-    seen_titles = set()  # Create a set to store seen titles
+"""
+Get articles from last 6 months
 
+Parameters:
+- queries: list of strings to query
+- json_file: string representing the file path
+- using_df: boolean value
+"""
+
+
+# get articles from last 6 months
+def get_articles(queries=[""], json_file="", using_df=False):
+    articles = []
+    seen_titles = set()
+    _, six_months_ago_date = get_news_search_dates()
+
+    # Define consistent column order for all entries
+    columns = ["source", "entry", "date_published", "is_rss", "query", "summary"]
+
+    # Process RSS feeds
     for source, feed in RSS_FEEDS.items():
         try:
-            print(f"Fetching {source} feed from {feed}")
             parsed_articles = parse_feed(feed)
             for entry, date_published in parsed_articles:
-                articles.append(
-                    (
+                if date_published.date() > six_months_ago_date:
+                    articles.append(
                         (
-                            f"Google News: {entry.source.title} "
-                            if source.startswith("Google News")
-                            else source
-                        ),
-                        entry,
-                        date_published,
-                        True,
-                        "RSS Feed",
+                            (
+                                f"Google News: {entry.source.title} "
+                                if source.startswith("Google News")
+                                else source
+                            ),
+                            entry,
+                            date_published,
+                            True,  # is_rss
+                            "RSS Feed",
+                            clean_text(
+                                entry.get(
+                                    "summary", entry.get("description", "No Summary")
+                                )
+                            ),
+                        )
                     )
-                )
-                seen_titles.add(entry.title.lower())  # Add the title to the set
+                    seen_titles.add(entry.title.lower())  # Add the title to the set
+
         except Exception as e:
             print(f"Error fetching articles from {source}: {e}")
 
-    # for source, feed in WEBSITES.items():
-    #     try:
-    #         print(f"Fetching {source} feed from {feed}")
-    #         feed_all = find_rss_links(feed)
-    #         for feed in feed_all:
-    #             print(f"Fetching articles from {feed}")
-    #             parsed_articles = parse_feed(feed)
-    #             articles.extend(
-    #                 [
-    #                     (source, entry, date_published)
-    #                     for entry, date_published in parsed_articles
-    #                     if entry is not None
-    #                 ]
-    #             )
-    #     except Exception as e:
-    #         print(f"Error fetching articles from {source}: {e}")
-
+    # Process Google News searches
     try:
-        # Fetch news articles for each query
         for query in queries:
             news_articles = search_news(query)
             for article in news_articles:
-                if (
-                    article.title.lower() not in seen_titles
-                ):  # Check if the title is already seen
-                    seen_titles.add(article.title.lower())  # Add the title to the set
+                if article.title.lower() not in seen_titles:
                     articles.append(
                         (
-                            f"Google News: {article.source.title} ",
+                            f"Google News: {article.source.title}",
                             article,
                             format_published_date(
                                 article.published_parsed or article.published
                             ),
-                            False,
+                            False,  # is_rss
                             query,
+                            clean_text(
+                                getattr(
+                                    article,
+                                    "summary",
+                                    getattr(article, "description", "No Summary"),
+                                )
+                            ),
                         )
                     )
+                    seen_titles.add(article.title.lower())
     except Exception as e:
-        print(e)
-    return articles or []
+        print(f"Error processing Google News: {e}")
+
+    if using_df:
+        if len(articles[0]) != len(columns):
+            raise ValueError(
+                f"Article tuple length {len(articles[0])} doesn't match columns {len(columns)}"
+            )
+        df = pd.DataFrame(articles, columns=columns)
+        return df
+
+    if json_file:
+        with open(json_file, "w") as f:
+            json.dump(articles, f, indent=4)
+        print(f"Saved articles to {json_file}")
+    return articles
 
 
 @app.route("/")
 def index():
 
     articles = get_articles(GOOGLE_NEWS_SEARCH_QUERIES)
+
+    # llm_news_feed = get_news_feed(articles)
 
     # sorting TODO: should perhaps filter first and then sort
     sort_date = request.args.get("sort_date")
@@ -252,6 +286,33 @@ def search():
         rss_feeds=RSS_FEEDS,
         google_queries=GOOGLE_NEWS_SEARCH_QUERIES,
     )
+
+
+# Main execution function
+def analyze_news(num_themes=10):
+    articles_df = get_articles(GOOGLE_NEWS_SEARCH_QUERIES, using_df=True)
+
+    # Check for required columns
+    required_columns = ["summary", "date_published", "entry"]
+    missing = [col for col in required_columns if col not in articles_df.columns]
+    if missing:
+        raise KeyError(f"Missing required columns: {missing}")
+
+    articles_df, _, _ = analyze_themes(articles_df, num_themes)
+    articles_df = label_themes(articles_df)
+    return generate_jot_notes(articles_df)
+
+
+@app.route("/publication")
+def publication():
+
+    results = analyze_news()
+    # results_to_json_file = "results.json"
+
+    # with open(results_to_json_file, "w") as f:
+    #     json.dump(results, f, indent=4)
+
+    return results, 200, {"Content-Type": "text/plain"}
 
 
 if __name__ == "__main__":

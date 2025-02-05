@@ -1,18 +1,28 @@
 flask
 python-dotenv
 
+beautifulsoup4==4.12.2
+feedparser
+
 requests
 requests-html
 
 lxml
 urllib3
 
-openai
+pandas
+numpy
 
-# web scraping libaries
-beautifulsoup4==4.12.2
-feedparser
-
-# news api packages (may use multiple or just one)
-newsapi-python
 pygooglenews==0.1.3
+
+scikit-learn
+faiss-cpu
+
+openai
+langchain
+langchain-core
+langchain-community
+ollama
+
+# chromadb
+

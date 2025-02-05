@@ -4,18 +4,11 @@ from pygooglenews import GoogleNews
 
 
 def get_news_search_dates():
-    """
-    Calculates today's date and the date 6 months ago.
-
-    Returns:
-      tuple: A tuple containing today's date and the date 6 months ago
-             in the format 'YYYY-MM-DD'.
-    """
     today = date.today() + timedelta(
         days=1
     )  # Add 1 day to today's date to include today's articles
     six_months_ago = today - timedelta(days=181)  # Approximately 6 months
-    return today.strftime("%Y-%m-%d"), six_months_ago.strftime("%Y-%m-%d")
+    return today, six_months_ago
 
 
 # Initialize GoogleNews
