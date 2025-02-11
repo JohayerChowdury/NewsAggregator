@@ -30,11 +30,10 @@ app = Flask(__name__)
 RSS_FEEDS = {
     # "Canadian Mortgage Trends": "https://www.canadianmortgagetrends.com/feed/",  # works
     "Google News: Canadian Accessory Dwelling Unit": "https://news.google.com/rss/search?q=canadian%20accessory%20dwelling%20unit&hl=en-CA&gl=CA&ceid=CA%3Aen",  # works
-    "Government of Ontario: All News": "https://news.ontario.ca/newsroom/en/rss/allnews.rss",  # works
     # "Government of Canada: Finance": "https://api.io.canada.ca/io-server/gc/news/en/v2?dept=departmentfinance&type=newsreleases&sort=publishedDate&orderBy=desc&publishedDate%3E=2020-08-09&pick=100&format=atom&atomtitle=Canada%20News%20Centre%20-%20Department%20of%20Finance%20Canada%20-%20News%20Releases",  # doesnt work,
     # TODO: look into podcasts and how to parse them
     "Podcast: The Hidden Upside: Real Estate": "https://feeds.libsyn.com/433605/rss",
-    "Podcast: The Real Estate REplay": "https://feeds.buzzsprout.com/1962859.rss",
+    # "Podcast: The Real Estate REplay": "https://feeds.buzzsprout.com/1962859.rss",
 }
 
 # TODO: stay away from company websites (have sales objectives that have "vendor" stuff)
@@ -45,16 +44,16 @@ WEBSITES = {
 
 # TODO: Yunji provided financing glossary, look into those terms and add them here
 GOOGLE_NEWS_SEARCH_QUERIES = [
-    # "Canadian accessory dwelling unit",  # NOTE: looks like adding "Canadian" doesn't work well
+    "Canadian accessory dwelling unit",  # NOTE: looks like adding "Canadian" doesn't work well
     # "Canadian mortgage regulations",
     # "Canadian zoning laws in Toronto",
-    # "zoning laws",
+    "zoning laws",
     # "accessory dwelling unit",
     # "mortgage regulations",
     # # TODO: look into how these queries are being used
     # "purchase financing",
     # "renovation financing",
-    # "construction financing",
+    "construction financing",
     # "private financing",
     # "mortgage financing",
     # "home equity financing",
@@ -166,6 +165,8 @@ def get_articles(queries=[""], json_file="", using_df=False):
                 f"Article tuple length {len(articles[0])} doesn't match columns {len(columns)}"
             )
         df = pd.DataFrame(articles, columns=columns)
+        with open("articles.csv", "w") as f:
+            df.to_csv(f, index=False)
         return df
 
     if json_file:
@@ -290,16 +291,20 @@ def search():
 
 # Main execution function
 def analyze_news(num_themes=10):
-    articles_df = get_articles(GOOGLE_NEWS_SEARCH_QUERIES, using_df=True)
+    try:
+        articles_df = get_articles(GOOGLE_NEWS_SEARCH_QUERIES, using_df=True)
 
-    # Check for required columns
-    required_columns = ["summary", "date_published", "entry"]
-    missing = [col for col in required_columns if col not in articles_df.columns]
-    if missing:
-        raise KeyError(f"Missing required columns: {missing}")
+        # Check for required columns
+        required_columns = ["summary", "date_published", "entry"]
+        missing = [col for col in required_columns if col not in articles_df.columns]
+        if missing:
+            raise KeyError(f"Missing required columns: {missing}")
 
-    articles_df, _, _ = analyze_themes(articles_df, num_themes)
-    articles_df = label_themes(articles_df)
+        articles_df, _, _ = analyze_themes(articles_df, num_themes)
+        articles_df = label_themes(articles_df)
+    except Exception as e:
+        print(f"Error analyzing news: {e}")
+        return "Error analyzing news response"
     return generate_jot_notes(articles_df)
 
 
@@ -311,8 +316,10 @@ def publication():
 
     # with open(results_to_json_file, "w") as f:
     #     json.dump(results, f, indent=4)
+    if results:
+        return results, 200, {"Content-Type": "text/plain"}
 
-    return results, 200, {"Content-Type": "text/plain"}
+    return "No results found", 404, {"Content-Type": "text/plain"}
 
 
 if __name__ == "__main__":

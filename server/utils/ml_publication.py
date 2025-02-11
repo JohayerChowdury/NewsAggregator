@@ -150,16 +150,15 @@ client = OpenAI(
 
 
 def analyze_themes(df, num_themes=10):
-    # Use first available text column
-    text_columns = ["summary", "description", "content", "title"]
-    text_col = next((col for col in text_columns if col in df.columns), None)
-
-    """Analyze themes using TF-IDF and K-means clustering"""
     tfidf = TfidfVectorizer(stop_words="english", max_features=500)
-    tfidf_matrix = tfidf.fit_transform(text_col)
+    tfidf_matrix = tfidf.fit_transform(df["summary"])
+    """Analyze themes using sentence embeddings and K-means clustering"""
+    # Generate embeddings for the summaries
 
     optimal_clusters = min(num_themes, len(df) // 2) if len(df) > 20 else 3
     kmeans = KMeans(n_clusters=optimal_clusters, random_state=42)
+
+    # add cluster number to the dataframe
     df["theme"] = kmeans.fit_predict(tfidf_matrix)
 
     return df, tfidf, kmeans

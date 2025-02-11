@@ -25,4 +25,4 @@ langchain-community
 ollama
 
 # chromadb
-
+# ipykernel
