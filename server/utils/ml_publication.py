@@ -127,12 +127,12 @@ open_ai_project = os.environ.get("OPENAI_PROJECT_ID")
 gpt_model = os.environ.get("GPT_MODEL")
 print(open_ai_api_key, llm_endpoint, open_ai_organization, open_ai_project, gpt_model)
 
-client = OpenAI(
-    api_key=open_ai_api_key,
-    base_url=llm_endpoint,
-    organization=open_ai_organization,
-    project=open_ai_project,
-)
+# client = OpenAI(
+#     api_key=open_ai_api_key,
+#     base_url=llm_endpoint,
+#     organization=open_ai_organization,
+#     project=open_ai_project,
+# )
 
 
 from sentence_transformers import SentenceTransformer
@@ -142,12 +142,12 @@ model = SentenceTransformer("all-MiniLM-L6-v2")
 
 def generate_embeddings(texts, use_openai=False):
     """Batch generate embeddings with error handling"""
-    if use_openai:
-        response = client.embeddings.create(input=texts, model="text-embedding-3-small")
-        return [item.embedding for item in response.data]
-    else:
-        embeddings = model.encode(texts)
-        return embeddings
+    # if use_openai:
+    #     response = client.embeddings.create(input=texts, model="text-embedding-3-small")
+    #     return [item.embedding for item in response.data]
+    # else:
+    embeddings = model.encode(texts)
+    return embeddings
 
 
 """Analyze themes using sentence embeddings and Faiss K-means clustering"""
