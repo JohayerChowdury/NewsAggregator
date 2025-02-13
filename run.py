@@ -1,39 +1,28 @@
-import feedparser
-import ssl
-
-import json
-
-from flask import Flask, render_template, request
-
-from server.utils import format_published_date, find_rss_links
-
-# from server.utils.news_api import search_news_articles
-from server.utils.pygooglenews import search_news, get_news_search_dates
-
-from server.utils.text_processing import clean_text
-
-from server.utils.ml_publication import analyze_themes, label_themes, generate_jot_notes
-
-# from server.utils.ml_publication import (
-#     load_documents,
-#     split_documents,
-#     create_vector_store,
-# )
-
-import pandas as pd
+import swifter
 
 import ollama
 
+from flask import Flask, render_template, request
+
+# from flask_cors import CORS
+
+from server.utils import pd
+from server.utils.scraper import get_articles, get_article_content, RSS_FEEDS
+from server.utils.text_processing import normalize_html_content
+from server.utils.ml_publication import analyze_themes, label_themes, generate_jot_notes
+
+
 app = Flask(__name__)
+# CORS(app)
 
 # Add the appropriate RSS feeds
 RSS_FEEDS = {
     # "Canadian Mortgage Trends": "https://www.canadianmortgagetrends.com/feed/",  # works
-    "Google News: Canadian Accessory Dwelling Unit": "https://news.google.com/rss/search?q=canadian%20accessory%20dwelling%20unit&hl=en-CA&gl=CA&ceid=CA%3Aen",  # works
+    # "Google News: Canadian Accessory Dwelling Unit": "https://news.google.com/rss/search?q=canadian%20accessory%20dwelling%20unit&hl=en-CA&gl=CA&ceid=CA%3Aen",  # works
     # "Government of Canada: Finance": "https://api.io.canada.ca/io-server/gc/news/en/v2?dept=departmentfinance&type=newsreleases&sort=publishedDate&orderBy=desc&publishedDate%3E=2020-08-09&pick=100&format=atom&atomtitle=Canada%20News%20Centre%20-%20Department%20of%20Finance%20Canada%20-%20News%20Releases",  # doesnt work,
     # TODO: look into podcasts and how to parse them
     "Podcast: The Hidden Upside: Real Estate": "https://feeds.libsyn.com/433605/rss",
-    # "Podcast: The Real Estate REplay": "https://feeds.buzzsprout.com/1962859.rss",
+    # "Podcast: The Real Estate REplay": "https://feeds.buzzsprout.com/1962859.rss", # doesnt work (for now)
 }
 
 # TODO: stay away from company websites (have sales objectives that have "vendor" stuff)
@@ -44,16 +33,16 @@ WEBSITES = {
 
 # TODO: Yunji provided financing glossary, look into those terms and add them here
 GOOGLE_NEWS_SEARCH_QUERIES = [
-    "Canadian accessory dwelling unit",  # NOTE: looks like adding "Canadian" doesn't work well
+    # "Canadian accessory dwelling unit",  # NOTE: looks like adding "Canadian" doesn't work well
     # "Canadian mortgage regulations",
     # "Canadian zoning laws in Toronto",
-    "zoning laws",
+    # "zoning laws",
     # "accessory dwelling unit",
     # "mortgage regulations",
     # # TODO: look into how these queries are being used
     # "purchase financing",
     # "renovation financing",
-    "construction financing",
+    # "construction financing",
     # "private financing",
     # "mortgage financing",
     # "home equity financing",
@@ -67,121 +56,11 @@ GOOGLE_NEWS_SEARCH_QUERIES = [
 ]
 
 
-def parse_feed(feed_url):
-    if hasattr(ssl, "_create_unverified_context"):
-        ssl._create_default_https_context = ssl._create_unverified_context
-    parsed_feed = feedparser.parse(feed_url)
-    articles = []
-    if parsed_feed.bozo:
-        print(f"Error parsing feed {feed_url}: {parsed_feed.bozo_exception}")
-    else:
-        for entry in parsed_feed.entries:
-            date_published = format_published_date(
-                entry.get("published_parsed") or entry.get("published")
-            )
-            articles.append((entry, date_published))
-    return articles
-
-
-"""
-Get articles from last 6 months
-
-Parameters:
-- queries: list of strings to query
-- json_file: string representing the file path
-- using_df: boolean value
-"""
-
-
-# get articles from last 6 months
-def get_articles(queries=[""], json_file="", using_df=False):
-    articles = []
-    seen_titles = set()
-    _, six_months_ago_date = get_news_search_dates()
-
-    # Define consistent column order for all entries
-    columns = ["source", "entry", "date_published", "is_rss", "query", "summary"]
-
-    # Process RSS feeds
-    for source, feed in RSS_FEEDS.items():
-        try:
-            parsed_articles = parse_feed(feed)
-            for entry, date_published in parsed_articles:
-                if date_published.date() > six_months_ago_date:
-                    articles.append(
-                        (
-                            (
-                                f"Google News: {entry.source.title} "
-                                if source.startswith("Google News")
-                                else source
-                            ),
-                            entry,
-                            date_published,
-                            True,  # is_rss
-                            "RSS Feed",
-                            clean_text(
-                                entry.get(
-                                    "summary", entry.get("description", "No Summary")
-                                )
-                            ),
-                        )
-                    )
-                    seen_titles.add(entry.title.lower())  # Add the title to the set
-
-        except Exception as e:
-            print(f"Error fetching articles from {source}: {e}")
-
-    # Process Google News searches
-    try:
-        for query in queries:
-            news_articles = search_news(query)
-            for article in news_articles:
-                if article.title.lower() not in seen_titles:
-                    articles.append(
-                        (
-                            f"Google News: {article.source.title}",
-                            article,
-                            format_published_date(
-                                article.published_parsed or article.published
-                            ),
-                            False,  # is_rss
-                            query,
-                            clean_text(
-                                getattr(
-                                    article,
-                                    "summary",
-                                    getattr(article, "description", "No Summary"),
-                                )
-                            ),
-                        )
-                    )
-                    seen_titles.add(article.title.lower())
-    except Exception as e:
-        print(f"Error processing Google News: {e}")
-
-    if using_df:
-        if len(articles[0]) != len(columns):
-            raise ValueError(
-                f"Article tuple length {len(articles[0])} doesn't match columns {len(columns)}"
-            )
-        df = pd.DataFrame(articles, columns=columns)
-        with open("articles.csv", "w") as f:
-            df.to_csv(f, index=False)
-        return df
-
-    if json_file:
-        with open(json_file, "w") as f:
-            json.dump(articles, f, indent=4)
-        print(f"Saved articles to {json_file}")
-    return articles
-
-
 @app.route("/")
 def index():
-
+    articles = []
+    # cached_article_file = open("articles.csv", "r")
     articles = get_articles(GOOGLE_NEWS_SEARCH_QUERIES)
-
-    # llm_news_feed = get_news_feed(articles)
 
     # sorting TODO: should perhaps filter first and then sort
     sort_date = request.args.get("sort_date")
@@ -290,32 +169,41 @@ def search():
 
 
 # Main execution function
-def analyze_news(num_themes=10):
+def analyze_news(num_themes=2):  # change to 10
     try:
-        articles_df = get_articles(GOOGLE_NEWS_SEARCH_QUERIES, using_df=True)
+        articles_df = get_articles(
+            GOOGLE_NEWS_SEARCH_QUERIES, using_df=True, decode_gnews=True
+        )
 
         # Check for required columns
-        required_columns = ["summary", "date_published", "entry"]
+        required_columns = ["source", "date_published", "entry", "link"]
         missing = [col for col in required_columns if col not in articles_df.columns]
         if missing:
             raise KeyError(f"Missing required columns: {missing}")
 
-        articles_df, _, _ = analyze_themes(articles_df, num_themes)
+        """
+        For each article, extract the content from the link 
+        """
+        articles_df["content"] = articles_df["link"].swifter.apply(get_article_content)
+
+        articles_df, _ = analyze_themes(articles_df, num_themes)
         articles_df = label_themes(articles_df)
+
     except Exception as e:
-        print(f"Error analyzing news: {e}")
-        return "Error analyzing news response"
-    return generate_jot_notes(articles_df)
+        print("Error analyzing news:")
+        return None, None
+
+    return generate_jot_notes(articles_df), articles_df
 
 
 @app.route("/publication")
 def publication():
 
-    results = analyze_news()
-    # results_to_json_file = "results.json"
+    results, df = analyze_news()
 
-    # with open(results_to_json_file, "w") as f:
-    #     json.dump(results, f, indent=4)
+    with open("articles.csv", "w") as f:
+        df.to_csv(f, index=False)
+
     if results:
         return results, 200, {"Content-Type": "text/plain"}
 

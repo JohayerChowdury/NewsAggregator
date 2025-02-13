@@ -11,3 +11,4 @@ venv.bak/
 
 # Python
 __pycache__/
+cache.sqlite

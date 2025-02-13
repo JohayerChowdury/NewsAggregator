@@ -6,21 +6,7 @@
     <h3><a href="{{ article[1].link or article[1].url }}">{{ article[1].title }}</a></h3>
     <p>Published: {{ article[2] }}</p>
     <p>Source: {{ article[0] }}</p>
-    <div>
-      <label for="is_rss_{{ article[1].title | escape }}">Is RSS: </label>
-      <input
-        type="checkbox"
-        id="is_rss_{{ article[1].title | escape }}"
-        name="is_rss"
-        {%
-        if
-        article[3]
-        %}checked{%
-        endif
-        %}
-        disabled />
-    </div>
-    <p>Google Search: {{ article[4] or "No" }}</p>
+    <p>Search: {{ article[3] }}</p>
   </article>
   {% endfor %}
 </div>

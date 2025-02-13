@@ -11,6 +11,8 @@ def format_published_date(date_string):
     try:
         if isinstance(date_string, tuple):
             return datetime(*date_string[:6])
+        elif isinstance(date_string, str):
+            return datetime.strptime(date_string, "%Y-%m-%d")
         # return datetime.strptime(date_string, "%a, %d %b %Y %H:%M:%S %Z")
     except Exception as e:
         print(f"Error formatting date: {e}")

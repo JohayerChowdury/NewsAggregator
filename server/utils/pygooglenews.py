@@ -8,7 +8,7 @@ def get_news_search_dates():
         days=1
     )  # Add 1 day to today's date to include today's articles
     six_months_ago = today - timedelta(days=181)  # Approximately 6 months
-    return today, six_months_ago
+    return today.strftime("%Y-%m-%d"), six_months_ago.strftime("%Y-%m-%d")
 
 
 # Initialize GoogleNews
