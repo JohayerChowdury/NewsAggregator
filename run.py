@@ -1,13 +1,16 @@
+import os
 import swifter
-
-import ollama
-
 from flask import Flask, render_template, request
 
 # from flask_cors import CORS
 
 from server.utils import pd
-from server.utils.scraper import get_articles, get_article_content, RSS_FEEDS
+from server.utils.scraper import (
+    load_articles,
+    get_articles,
+    get_article_content,
+    RSS_FEEDS,
+)
 from server.utils.text_processing import normalize_html_content
 from server.utils.ml_publication import analyze_themes, label_themes, generate_jot_notes
 
@@ -36,9 +39,9 @@ GOOGLE_NEWS_SEARCH_QUERIES = [
     # "Canadian accessory dwelling unit",  # NOTE: looks like adding "Canadian" doesn't work well
     # "Canadian mortgage regulations",
     # "Canadian zoning laws in Toronto",
-    # "zoning laws",
-    # "accessory dwelling unit",
-    # "mortgage regulations",
+    "zoning laws",
+    "accessory dwelling unit",
+    "mortgage regulations",
     # # TODO: look into how these queries are being used
     # "purchase financing",
     # "renovation financing",
@@ -55,27 +58,27 @@ GOOGLE_NEWS_SEARCH_QUERIES = [
     # "multiplex refinance",
 ]
 
+article_file = "articles.json"
+
 
 @app.route("/")
 def index():
-    articles = []
-    # cached_article_file = open("articles.csv", "r")
-    articles = get_articles(GOOGLE_NEWS_SEARCH_QUERIES)
+    articles = load_articles(article_file)
 
     # sorting TODO: should perhaps filter first and then sort
     sort_date = request.args.get("sort_date")
     if sort_date:
-        articles.sort(key=lambda x: x[2], reverse=(sort_date == "desc"))
+        articles.sort(key=lambda x: x[3], reverse=(sort_date == "desc"))
 
     sort_title = request.args.get("sort_title")
     if sort_title:
-        articles.sort(key=lambda x: x[1].title, reverse=(sort_title == "desc"))
+        articles.sort(key=lambda x: x[2].title, reverse=(sort_title == "desc"))
 
     # filters
-    unfiltered_sources = sorted(list(set(article[0] for article in articles)))
+    unfiltered_sources = sorted(list(set(article[1] for article in articles)))
     selected_sources = request.args.getlist("source")
     if selected_sources:
-        articles = [article for article in articles if article[0] in selected_sources]
+        articles = [article for article in articles if article[1] in selected_sources]
 
     selected_google_searches = request.args.getlist("google_search")
     if selected_google_searches:
@@ -112,29 +115,31 @@ def index():
 def search():
     query = request.args.get("query") or ""
 
-    articles = get_articles(GOOGLE_NEWS_SEARCH_QUERIES)
+    articles = get_articles(
+        queries=GOOGLE_NEWS_SEARCH_QUERIES, article_file=article_file
+    )
 
     results = [
         article
         for article in articles
-        if query.lower() in article[1].title.lower()
-        or query.lower() in article[1].summary.lower()
+        if query.lower() in article[2].title.lower()
+        or query.lower() in normalize_html_content(article[2].summary).lower()
     ]
 
     # sorting TODO: should perhaps filter first and then sort
     sort_date = request.args.get("sort_date")
     if sort_date:
-        results.sort(key=lambda x: x[2], reverse=(sort_date == "desc"))
+        results.sort(key=lambda x: x[3], reverse=(sort_date == "desc"))
 
     sort_title = request.args.get("sort_title")
     if sort_title:
-        results.sort(key=lambda x: x[1].title, reverse=(sort_title == "desc"))
+        results.sort(key=lambda x: x[2].title, reverse=(sort_title == "desc"))
 
     # filters
-    unfiltered_sources = sorted(list(set(article[0] for article in results)))
+    unfiltered_sources = sorted(list(set(article[1] for article in results)))
     selected_sources = request.args.getlist("source")
     if selected_sources:
-        results = [article for article in results if article[0] in selected_sources]
+        results = [article for article in results if article[1] in selected_sources]
 
     selected_google_searches = request.args.getlist("google_search")
     if selected_google_searches:
@@ -169,29 +174,36 @@ def search():
 
 
 # Main execution function
-def analyze_news(num_themes=2):  # change to 10
+def analyze_news():  # change to 10
+    articles_df = get_articles(
+        GOOGLE_NEWS_SEARCH_QUERIES,
+        using_df=True,
+        decode_gnews=True,
+        article_file=article_file,
+    )
     try:
-        articles_df = get_articles(
-            GOOGLE_NEWS_SEARCH_QUERIES, using_df=True, decode_gnews=True
-        )
 
-        # Check for required columns
-        required_columns = ["source", "date_published", "entry", "link"]
-        missing = [col for col in required_columns if col not in articles_df.columns]
-        if missing:
-            raise KeyError(f"Missing required columns: {missing}")
+        # # Check for required columns
+        # required_columns = ["id", "source", "date_published", "entry", "link"]
+        # missing = [col for col in required_columns if col not in articles_df.columns]
+        # if missing:
+        #     raise KeyError(f"Missing required columns: {missing}")
 
         """
-        For each article, extract the content from the link 
+        For each article, extract the content from the link
         """
         articles_df["content"] = articles_df["link"].swifter.apply(get_article_content)
 
-        articles_df, _ = analyze_themes(articles_df, num_themes)
+        articles_df, _ = analyze_themes(articles_df)
         articles_df = label_themes(articles_df)
+
+        with open("articles.json", "w") as f:
+            articles_df.to_json()
 
     except Exception as e:
         print("Error analyzing news:")
-        return None, None
+        print(e)
+        return None, articles_df
 
     return generate_jot_notes(articles_df), articles_df
 
@@ -201,9 +213,6 @@ def publication():
 
     results, df = analyze_news()
 
-    with open("articles.csv", "w") as f:
-        df.to_csv(f, index=False)
-
     if results:
         return results, 200, {"Content-Type": "text/plain"}
 
@@ -211,4 +220,4 @@ def publication():
 
 
 if __name__ == "__main__":
-    app.run(port=5000, debug=True)
+    app.run(port=os.environ.get("PORT") or 5000, debug=True)

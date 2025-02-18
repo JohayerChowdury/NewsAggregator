@@ -4,12 +4,11 @@ import pandas as pd
 import feedparser
 from requests_cache import CachedSession
 from bs4 import BeautifulSoup
-import urllib.parse
 import ssl
 from googlenewsdecoder import gnewsdecoder
 
 from .pygooglenews import search_news, get_news_search_dates
-from .date_helpers import format_published_date
+from .date_helpers import format_published_date, serialize_datetime
 from .text_processing import clean_text
 
 rss_feeds_file = open("input/rss_feeds.json")
@@ -48,40 +47,31 @@ def decode_gnews_url(url):
         decoded = gnewsdecoder(url)
         if decoded.get("status"):
             return decoded["decoded_url"]
-        else:
-            return url
+
     except Exception as e:
         print(f"Error decoding URL {url}: {e}")
-        decoded_url = url
+    return url
 
 
-"""
-Get articles from last 6 months
-
-Parameters:
-- queries: list of strings to query
-- json_file: string representing the file path
-- using_df: boolean value
-"""
+def load_articles(json_file):
+    with open(json_file, "r") as f:
+        articles = json.load(f)
+    return articles
 
 
-# get articles from last 6 months
-def get_articles(queries=[""], json_file=None, using_df=False, decode_gnews=False):
-    articles = []
-    seen_titles = set()
-    _, six_months_ago_date = get_news_search_dates()
-
-    # Define consistent column order for all entries
-    columns = ["source", "entry", "date_published", "is_rss_or_query", "link"]
-
-    # Process RSS feeds
+def get_articles_from_rss_feeds(
+    seen_titles, articles, six_months_ago_date, decode_gnews=False
+):
     for source, feed in RSS_FEEDS.items():
         try:
             parsed_articles = parse_feed(feed)
             for entry, date_published in parsed_articles:
+                # if entry.id in articles:
+                #     continue
                 if date_published > format_published_date(six_months_ago_date):
                     articles.append(
                         (
+                            entry.id,
                             (
                                 f"Google News: {entry.source.title} "
                                 if source.startswith("Google News")
@@ -102,6 +92,31 @@ def get_articles(queries=[""], json_file=None, using_df=False, decode_gnews=Fals
         except Exception as e:
             print(f"Error fetching articles from {source}: {e}")
 
+
+"""
+Get articles from last 6 months
+
+Parameters:
+- queries: list of strings to query
+- json_file: string representing the file path
+- using_df: boolean value
+"""
+
+
+# get articles from last 6 months
+def get_articles(queries=[""], article_file=None, using_df=False, decode_gnews=False):
+    articles = load_articles(article_file) if article_file else []
+    seen_titles = set()
+    _, six_months_ago_date = get_news_search_dates()
+
+    # Define consistent column order for all entries
+    columns = ["id", "source", "entry", "date_published", "is_rss_or_query", "link"]
+
+    # Process RSS feeds
+    get_articles_from_rss_feeds(
+        seen_titles, articles, six_months_ago_date, decode_gnews
+    )
+
     # Process Google News searches
     try:
         for query in queries:
@@ -110,6 +125,7 @@ def get_articles(queries=[""], json_file=None, using_df=False, decode_gnews=Fals
                 if article.title.lower() not in seen_titles:
                     articles.append(
                         (
+                            article.id,
                             f"Google News: {article.source.title}",
                             article,
                             format_published_date(
@@ -129,21 +145,20 @@ def get_articles(queries=[""], json_file=None, using_df=False, decode_gnews=Fals
                 f"Article tuple length {len(articles[0])} doesn't match columns {len(columns)}"
             )
         df = pd.DataFrame(articles, columns=columns)
-        with open("articles.csv", "w") as f:
-            df.to_csv(f, index=False)
         return df
 
-    if json_file:
-        with open(json_file, "w") as f:
-            json.dump(articles, f, indent=4)
-        print(f"Saved articles to {json_file}")
+    if article_file:
+        with open(article_file, "w") as f:
+            json.dump(articles, f, indent=4, default=serialize_datetime)
+        print(f"Saved articles to {article_file}")
+
     return articles
 
 
 def get_article_content(url):
     #     """Fetch and extract article text from a given URL."""
     try:
-        response = session.get(url, headers=HEADERS, timeout=10)
+        response = session.get(url, headers=HEADERS, timeout=6)
         response.raise_for_status()
         soup = BeautifulSoup(response.content, "html.parser")
 
