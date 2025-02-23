@@ -20,6 +20,7 @@ def normalize_html_content(raw_html):
     text = remove_accented_chars(text)
     # Replace escaped Unicode whitespace characters
     text = text.replace("\\xa0", "\n\n")  # Preserve paragraph breaks
+    # text = text.replace("\\xa0", "\n\n")  # Preserve paragraph breaks
 
     print("Text after cleaning:", text)
     return text
@@ -77,14 +78,31 @@ def clean_text(text):
 
     # Normalize whitespace and fix encoding
     text = " ".join(text.split()).strip()
+    text = remove_accented_chars(text)
 
     # Remove common texts that are not relevant
-    text = re.sub(r"Written by *$", "", text)
-    text = text.replace("Click here for more information.", "")
-    text = text.replace("Having trouble logging in", "")
-    text = text.replace("Click here to unsubscribe", "")
-    text = text.replace("Click here to view in browser", "")
-    text = text.replace("Click here to read more", "")
-    text = re.sub(r"Read more$", "", text)
+    phrases_to_remove = [
+        r"You can save this article by registering for freehere\.",
+        r"Reviews and recommendations are unbiased and products are independently selected\.",
+        r"Postmedia may earn an affiliate commission from purchases made through links on this page\.",
+        r"Written by.*?(?=\s)",  # removes 'Written by' and subsequent content until a space
+        r"Last modified:.*?(?=\s)",
+        r"Please keep comments relevant and respectful\.",
+        r"This website uses cookies.*?(?=By continuing)",  # example pattern
+        r"Having trouble logging in\?",
+        r"Click here for more information\.",
+        r"Click here to unsubscribe\.",
+        r"Click here to view in browser\.",
+        r"Click here to read more\.",
+        r"Read more$",
+        # Add more patterns as needed
+    ]
 
-    return text.encode("ascii", "ignore").decode("ascii")
+    # Remove each unwanted phrase/pattern from the text
+    for pattern in phrases_to_remove:
+        text = re.sub(pattern, "", text, flags=re.IGNORECASE)
+
+    # Final cleanup: remove any extra spaces that may have resulted
+    text = re.sub(r"\s+", " ", text).strip()
+
+    return text

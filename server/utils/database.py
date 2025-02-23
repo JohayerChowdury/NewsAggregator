@@ -14,11 +14,11 @@ class database:
         c = conn.cursor()
         create_table = """
                         CREATE TABLE IF NOT EXISTS articles (
-                            id INTEGER PRIMARY KEY,
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            link_url TEXT NOT NULL,
                             title TEXT NOT NULL,
                             source TEXT NOT NULL,
                             date_published TEXT NOT NULL,
-                            link_url TEXT NOT NULL,
                             content TEXT NOT NULL,
                         )
                         """

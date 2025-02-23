@@ -8,6 +8,7 @@ from server.utils.scraper import (
     load_json_to_df,
     save_df_to_json,
     get_articles,
+    extract_clean_article,
     check_for_required_columns,
     RSS_FEEDS,
     GOOGLE_NEWS_SEARCH_QUERIES,
@@ -152,16 +153,18 @@ def analyze_news():
         """
         For each article, extract the content from the link
         """
-
-        # articles_df["content"] = articles_df["link_url"].swifter.apply(
-        #     fetch_article_soup
-        # )
-
-        # articles_df_without_content = articles_df.loc[articles_df["content"].isnull()]
-        # articles_df_without_content["content"] = articles_df_without_content[
-        #     "link_url"
-        # ].swifter.apply(get_article_content)
-        # articles_df.update(articles_df_without_content)
+        if "content" not in articles_df.columns:
+            articles_df["content"] = articles_df["link_url"].swifter.apply(
+                extract_clean_article
+            )
+        else:
+            articles_df_without_content = articles_df.loc[
+                articles_df["content"].isnull()
+            ]
+            articles_df_without_content["content"] = articles_df_without_content[
+                "link_url"
+            ].swifter.apply(extract_clean_article)
+            articles_df.update(articles_df_without_content)
 
         # articles_df, _ = analyze_themes(articles_df)
         # articles_df = label_themes(articles_df)
@@ -170,10 +173,8 @@ def analyze_news():
         print("Error analyzing news:")
         print(e)
 
+    save_df_to_json(articles_df, ARTICLE_FILE)
     return articles_df
-
-    # save_df_to_json(articles_df, ARTICLE_FILE)
-    # return articles_df
     # return generate_jot_notes(articles_df)
 
 

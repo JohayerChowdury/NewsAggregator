@@ -92,18 +92,17 @@ def save_df_to_json(df: pd.DataFrame, filename: str) -> None:
 
 
 required_columns = [
-    "id",
+    "link_url",
     "source",
     "date_published",
     "title",
     "summary",
     "from_rss_or_query",
-    "link_url",
     "entry",
 ]
 
 
-def check_for_required_columns(df, required_columns=["id"]):
+def check_for_required_columns(df, required_columns):
     missing = [col for col in required_columns if col not in df.columns]
     if missing:
         print("DF columns are: ", df.columns)
@@ -148,13 +147,19 @@ def get_articles_from_rss_feeds(
         try:
             parsed_articles = parse_feed(feed)
             for entry, date_published in parsed_articles:
-                # TODO: i dont think entry.id would work, need a diff way to compare two articles other than content and id
-                # if entry.id in articles:
-                #     continue
+                link_url = (
+                    entry.link if not decode_gnews else decode_gnews_url(entry.link)
+                )
+                if (
+                    link_url in articles_df["link_url"].values
+                    or link_url in seen_titles
+                ):
+                    continue
                 if date_published > standardize_date(six_months_ago_date):
+
                     new_row = pd.DataFrame(
                         {
-                            "id": [entry.id],
+                            "link_url": [link_url],
                             "source": [
                                 (
                                     f"Google News: {entry.source.title} "
@@ -166,19 +171,12 @@ def get_articles_from_rss_feeds(
                             "title": [entry.title],
                             "summary": [normalize_html_content(entry.summary)],
                             "from_rss_or_query": ["RSS Feed"],
-                            "link_url": [
-                                (
-                                    entry.link
-                                    if not decode_gnews
-                                    else decode_gnews_url(entry.link)
-                                )
-                            ],
                             "entry": [entry],
                         },
                     )
 
                     articles_df = pd.concat([articles_df, new_row], ignore_index=True)
-                    seen_titles.add(entry.id)
+                    seen_titles.add(link_url)
 
         except Exception as e:
             print(f"Error fetching articles from {source}: {e}")
@@ -192,7 +190,7 @@ def get_articles(article_file, queries=[""], decode_gnews=False):
         article_file, expected_columns=required_columns
     )
     if not initial_articles_df.empty:
-        seen_titles = set(initial_articles_df["id"])
+        seen_titles = set(initial_articles_df["link_url"])
     else:
         seen_titles = set()
     _, six_months_ago_date = get_news_search_dates()
@@ -207,10 +205,15 @@ def get_articles(article_file, queries=[""], decode_gnews=False):
         for query in queries:
             news_articles = search_news(query)
             for article in news_articles:
-                if article["id"] not in seen_titles:
+                if article["link_url"] not in seen_titles:
+                    link_url = (
+                        article.link
+                        if not decode_gnews
+                        else decode_gnews_url(article.link)
+                    )
                     new_row = pd.DataFrame(
                         {
-                            "id": article.id,
+                            "link_url": [link_url],
                             "source": f"Google News: {article.source.title}",
                             "date_published": [
                                 standardize_date(
@@ -220,18 +223,11 @@ def get_articles(article_file, queries=[""], decode_gnews=False):
                             "title": [article.title],
                             "summary": [normalize_html_content(article.summary) or ""],
                             "from_rss_or_query": [query],
-                            "link_url": [
-                                (
-                                    article.link
-                                    if not decode_gnews
-                                    else decode_gnews_url(article.link)
-                                )
-                            ],
                             "entry": [article],
                         },
                     )
                     articles_df = pd.concat([articles_df, new_row])
-                    seen_titles.add(article.id)
+                    seen_titles.add(link_url)
     except Exception as e:
         print(f"Error processing Google News: {e}")
 
@@ -264,8 +260,6 @@ def extract_clean_article(
     soup = fetch_article_soup(url)
 
     p_tags = soup.find_all("p")
-    title = soup.find("title")
-    print("Title: ", title)
 
     clean_paragraphs = []
 
@@ -296,7 +290,7 @@ def extract_clean_article(
         if not exclude:
             clean_paragraphs.append(p.get_text(strip=True))
 
-    return "\n".join(clean_paragraphs)
+    return clean_text("\n".join(clean_paragraphs))
 
 
 # # https://marko.tech/journal/python-rss #TODO: find original source
