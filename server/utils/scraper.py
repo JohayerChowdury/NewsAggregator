@@ -4,23 +4,110 @@ import pandas as pd
 import feedparser
 from requests_cache import CachedSession
 from bs4 import BeautifulSoup
-import urllib.parse
 import ssl
 from googlenewsdecoder import gnewsdecoder
 
 from .pygooglenews import search_news, get_news_search_dates
-from .date_helpers import format_published_date
-from .text_processing import clean_text
+from .date_helpers import standardize_date, serialize_datetime
+from .text_processing import clean_text, normalize_html_content
+
+
+# Add the appropriate RSS feeds
+# RSS_FEEDS = {
+# "Canadian Mortgage Trends": "https://www.canadianmortgagetrends.com/feed/",  # works
+# "Google News: Canadian Accessory Dwelling Unit": "https://news.google.com/rss/search?q=canadian%20accessory%20dwelling%20unit&hl=en-CA&gl=CA&ceid=CA%3Aen",  # works
+# "Government of Canada: Finance": "https://api.io.canada.ca/io-server/gc/news/en/v2?dept=departmentfinance&type=newsreleases&sort=publishedDate&orderBy=desc&publishedDate%3E=2020-08-09&pick=100&format=atom&atomtitle=Canada%20News%20Centre%20-%20Department%20of%20Finance%20Canada%20-%20News%20Releases",  # doesnt work,
+# TODO: look into podcasts and how to parse them
+# "Podcast: The Hidden Upside: Real Estate": "https://feeds.libsyn.com/433605/rss",
+# "Podcast: The Real Estate REplay": "https://feeds.buzzsprout.com/1962859.rss", # doesnt work (for now)
+# }
+
+# TODO: stay away from company websites (have sales objectives that have "vendor" stuff)
+# WEBSITES = {
+# "Accessorry Dwelling Finance News": "https://accessorydwellings.org/category/news/financing-news/",
+# "Flexobuild News": "https://flexobuild.com/media" # not works
+# }
 
 rss_feeds_file = open("input/rss_feeds.json")
 RSS_FEEDS = json.load(rss_feeds_file)
 rss_feeds_file.close()
+
+# TODO: Yunji provided financing glossary, look into those terms and add them here
+GOOGLE_NEWS_SEARCH_QUERIES = [
+    # "Canadian accessory dwelling unit",  # NOTE: looks like adding "Canadian" doesn't work well
+    # "Canadian mortgage regulations",
+    # "Canadian zoning laws in Toronto",
+    # "zoning laws",
+    # "accessory dwelling unit",
+    # "mortgage regulations",
+    # # TODO: look into how these queries are being used
+    # "purchase financing",
+    # "renovation financing",
+    # "construction financing",
+    # "private financing",
+    # "mortgage financing",
+    # "home equity financing",
+    # "refinancing mortgage",
+    # "multiplex conversion",
+    # "multiplex renovation",
+    # "multiplex financing",
+    # "multiplex construction",
+    # "multiplex purchase",
+    # "multiplex refinance",
+]
 
 # Custom headers to mimic a real browser
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 }
 session = CachedSession(cache_name="cache", backend="sqlite", expire_after=3000)
+
+
+def load_json_to_df(filename: str, expected_columns: list) -> pd.DataFrame:
+    """Load a JSON file into a Pandas DataFrame and ensure expected columns."""
+    try:
+        print(f"Loading {filename}...")
+        with open(filename, "r") as file:
+            data = json.load(file)  # Load JSON manually to handle missing fields
+
+        df = pd.DataFrame(data)  # Convert to DataFrame
+        df = df.reindex(columns=expected_columns)  # Ensure all expected columns exist
+        if df.empty:
+            print(f"Warning: {filename} is empty. Returning an empty DataFrame.")
+        return df
+    except (FileNotFoundError, json.JSONDecodeError):
+        print(f"Error: Unable to read {filename}. Returning an empty DataFrame.")
+        return pd.DataFrame(columns=expected_columns)
+
+
+def save_df_to_json(df: pd.DataFrame, filename: str) -> None:
+    try:
+        """Save a DataFrame to a JSON file."""
+        print(f"Saving {filename}...")
+        df.to_json(filename, orient="records", indent=4)  # Save as a list of records
+        print(f"Saved {filename}.")
+    except Exception as e:
+        print(f"Error saving {filename}: {e}")
+        raise e
+
+
+required_columns = [
+    "id",
+    "source",
+    "date_published",
+    "title",
+    "summary",
+    "from_rss_or_query",
+    "link_url",
+    "entry",
+]
+
+
+def check_for_required_columns(df, required_columns=["id"]):
+    missing = [col for col in required_columns if col not in df.columns]
+    if missing:
+        print("DF columns are: ", df.columns)
+        raise KeyError(f"Missing required columns: {missing}")
 
 
 def parse_feed(feed_url):
@@ -33,7 +120,7 @@ def parse_feed(feed_url):
             print(f"Error parsing feed {feed_url}: {parsed_feed.bozo_exception}")
         else:
             for entry in parsed_feed.entries:
-                date_published = format_published_date(
+                date_published = standardize_date(
                     entry.get("published_parsed") or entry.get("published")
                 )
                 articles.append((entry, date_published))
@@ -48,127 +135,141 @@ def decode_gnews_url(url):
         decoded = gnewsdecoder(url)
         if decoded.get("status"):
             return decoded["decoded_url"]
-        else:
-            return url
+
     except Exception as e:
         print(f"Error decoding URL {url}: {e}")
-        decoded_url = url
+    return url
 
 
-"""
-Get articles from last 6 months
-
-Parameters:
-- queries: list of strings to query
-- json_file: string representing the file path
-- using_df: boolean value
-"""
-
-
-# get articles from last 6 months
-def get_articles(queries=[""], json_file=None, using_df=False, decode_gnews=False):
-    articles = []
-    seen_titles = set()
-    _, six_months_ago_date = get_news_search_dates()
-
-    # Define consistent column order for all entries
-    columns = ["source", "entry", "date_published", "is_rss_or_query", "link"]
-
-    # Process RSS feeds
+def get_articles_from_rss_feeds(
+    seen_titles, articles_df, six_months_ago_date, decode_gnews
+):
     for source, feed in RSS_FEEDS.items():
         try:
             parsed_articles = parse_feed(feed)
             for entry, date_published in parsed_articles:
-                if date_published > format_published_date(six_months_ago_date):
-                    articles.append(
-                        (
-                            (
-                                f"Google News: {entry.source.title} "
-                                if source.startswith("Google News")
-                                else source
-                            ),
-                            entry,
-                            date_published,
-                            "RSS Feed",
-                            (
-                                entry.link
-                                if not decode_gnews
-                                else decode_gnews_url(entry.link)
-                            ),
-                        )
+                # TODO: i dont think entry.id would work, need a diff way to compare two articles other than content and id
+                # if entry.id in articles:
+                #     continue
+                if date_published > standardize_date(six_months_ago_date):
+                    new_row = pd.DataFrame(
+                        {
+                            "id": [entry.id],
+                            "source": [
+                                (
+                                    f"Google News: {entry.source.title} "
+                                    if source.startswith("Google News")
+                                    else source
+                                )
+                            ],
+                            "date_published": [date_published],
+                            "title": [entry.title],
+                            "summary": [normalize_html_content(entry.summary)],
+                            "from_rss_or_query": ["RSS Feed"],
+                            "link_url": [
+                                (
+                                    entry.link
+                                    if not decode_gnews
+                                    else decode_gnews_url(entry.link)
+                                )
+                            ],
+                            "entry": [entry],
+                        },
                     )
-                    seen_titles.add(entry.title.lower())  # Add the title to the set
+
+                    articles_df = pd.concat([articles_df, new_row], ignore_index=True)
+                    seen_titles.add(entry.id)
 
         except Exception as e:
             print(f"Error fetching articles from {source}: {e}")
+    return articles_df
+
+
+# get articles from last 6 months
+def get_articles(article_file, queries=[""], decode_gnews=False):
+
+    initial_articles_df = load_json_to_df(
+        article_file, expected_columns=required_columns
+    )
+    if not initial_articles_df.empty:
+        seen_titles = set(initial_articles_df["id"])
+    else:
+        seen_titles = set()
+    _, six_months_ago_date = get_news_search_dates()
+
+    # Process RSS feeds
+    articles_df = get_articles_from_rss_feeds(
+        seen_titles, initial_articles_df, six_months_ago_date, decode_gnews
+    )
 
     # Process Google News searches
     try:
         for query in queries:
             news_articles = search_news(query)
             for article in news_articles:
-                if article.title.lower() not in seen_titles:
-                    articles.append(
-                        (
-                            f"Google News: {article.source.title}",
-                            article,
-                            format_published_date(
-                                article.published_parsed or article.published
-                            ),
-                            query,
-                            article.link,
-                        )
+                if article["id"] not in seen_titles:
+                    new_row = pd.DataFrame(
+                        {
+                            "id": article.id,
+                            "source": f"Google News: {article.source.title}",
+                            "date_published": [
+                                standardize_date(
+                                    article.published_parsed or article.published
+                                )
+                            ],
+                            "title": [article.title],
+                            "summary": [normalize_html_content(article.summary) or ""],
+                            "from_rss_or_query": [query],
+                            "link_url": [
+                                (
+                                    article.link
+                                    if not decode_gnews
+                                    else decode_gnews_url(article.link)
+                                )
+                            ],
+                            "entry": [article],
+                        },
                     )
-                    seen_titles.add(article.title.lower())
+                    articles_df = pd.concat([articles_df, new_row])
+                    seen_titles.add(article.id)
     except Exception as e:
         print(f"Error processing Google News: {e}")
 
-    if using_df:
-        if len(articles[0]) != len(columns):
-            raise ValueError(
-                f"Article tuple length {len(articles[0])} doesn't match columns {len(columns)}"
-            )
-        df = pd.DataFrame(articles, columns=columns)
-        with open("articles.csv", "w") as f:
-            df.to_csv(f, index=False)
-        return df
-
-    if json_file:
-        with open(json_file, "w") as f:
-            json.dump(articles, f, indent=4)
-        print(f"Saved articles to {json_file}")
-    return articles
+    save_df_to_json(articles_df, article_file)
+    return articles_df
 
 
-def get_article_content(url):
+def fetch_article_soup(url):
     #     """Fetch and extract article text from a given URL."""
     try:
-        response = session.get(url, headers=HEADERS, timeout=10)
+        response = session.get(url, headers=HEADERS, timeout=10, allow_redirects=True)
         response.raise_for_status()
-        soup = BeautifulSoup(response.content, "html.parser")
-
-        # Extract article content
-        article_content = extract_clean_article(soup)
-
-        # Clean up the extracted text
-        return clean_text(article_content)
     except Exception as e:
-        print(f"Error getting article content of {url}: {e}")
+        print(f"Error fetching {url}: {e}")
+
+    try:
+        return BeautifulSoup(response.text, "html.parser")
+    except Exception as e:
+        print(f"Error fetching article content of {url}")
+        print(e)
         return None
 
 
 def extract_clean_article(
-    soup,
+    url,
     excluded_classes=["ad", "sponsored", "promo", "sidebar", "footer"],
     excluded_keywords=["advertisement", "subscribe", "click here"],
     max_depth=3,
 ):
+    soup = fetch_article_soup(url)
 
-    paragraphs = soup.find_all("p")
+    p_tags = soup.find_all("p")
+    title = soup.find("title")
+    print("Title: ", title)
 
     clean_paragraphs = []
 
-    for p in paragraphs:
+    for p in p_tags:
         parent = p
         depth = 0
         exclude = False

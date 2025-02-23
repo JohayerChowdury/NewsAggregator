@@ -14,6 +14,7 @@ swifter
 
 lxml
 urllib3
+# html5lib # https://stackoverflow.com/a/73403774
 
 pandas
 numpy

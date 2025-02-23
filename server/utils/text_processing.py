@@ -2,23 +2,27 @@ import re
 from bs4 import BeautifulSoup
 
 
+def remove_accented_chars(text):
+    text = text.encode("ascii", "ignore").decode("ascii")  # Remove non-ASCII characters
+    return text
+
+
 def normalize_html_content(raw_html):
     """Clean and normalize text from HTML content"""
 
     # Parse HTML and extract text
     soup = BeautifulSoup(raw_html, "html.parser")
-    raw_html = soup.get_text(separator=" ")  # Preserve some spacing between elements
+    text = soup.get_text(separator=" ")  # Preserve some spacing between elements
+    print("Text before cleaning:", text)
 
     # Remove excessive whitespace and normalize encoding
-    raw_html = re.sub(r"\s+", " ", raw_html).strip()
-    raw_html = raw_html.encode("ascii", "ignore").decode(
-        "ascii"
-    )  # Remove non-ASCII characters
-
+    text = re.sub(r"\s+", " ", text).strip()
+    text = remove_accented_chars(text)
     # Replace escaped Unicode whitespace characters
-    raw_html = raw_html.replace("\\xa0", "\n\n")  # Preserve paragraph breaks
+    text = text.replace("\\xa0", "\n\n")  # Preserve paragraph breaks
 
-    return raw_html
+    print("Text after cleaning:", text)
+    return text
 
 
 def remove_websites_and_social_media_mentions(text):

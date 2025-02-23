@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Publication Results</title>
+  </head>
+  <body>
+    <h1>Publication Results</h1>
+    {% if !results.empty %} {% for result in results %}
+    <h2>{{ result.theme }}</h2>
+    <p>{{ result.summary }}</p>
+    <ul>
+      {% for article in result.articles %} {{ article|safe }} {% endfor %}
+    </ul>
+    {% endfor %} {% else %}
+    <p>No results found.</p>
+    {% endif %}
+  </body>
+</html>

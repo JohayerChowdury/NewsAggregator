@@ -6,10 +6,12 @@
 <div class="articles">
   {% for article in articles %}
   <article>
-    <h2><a href="{{ article[1].link or article[1].url }}">{{ article[1].title }}</a></h2>
-    <p>Published: {{ article[2] }}</p>
-    <p>Source: {{ article[0] }}</p>
-    <p>Search: {{ article[3] }}</p>
+    <h2>
+      <a href="{{ article.link_url or article.entry.link }}">{{ article.title }}</a>
+    </h2>
+    <p>Published: {{ article.date_published }}</p>
+    <p>Source: {{ article.source }}</p>
+    <p>Search: {{ article.from_rss_or_query }}</p>
   </article>
   {% endfor %}
 </div>

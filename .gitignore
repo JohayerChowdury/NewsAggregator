@@ -1,4 +1,6 @@
 articles.csv
+articles.json
+articles.db
 
 # Environments
 .env
