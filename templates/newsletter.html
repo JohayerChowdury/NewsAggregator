@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Newsletter</title>
+  </head>
+  <body>
+    {% for result in results %}
+    <h2>{{ result.theme_name }}</h2>
+    <p>{{ result.summary }}</p>
+    {% endfor %}
+  </body>
+</html>

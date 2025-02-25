@@ -3,7 +3,7 @@
 <div class="articles">
   {% for article in articles %}
   <article>
-    <h3><a href="{{ article.link_url or article.entry.url }}">{{ article.title }}</a></h3>
+    <h3><a href="{{ article.extracted_link_url or article.link }}">{{ article.title }}</a></h3>
     <p>Published: {{ article.date_published }}</p>
     <p>Source: {{ article.source }}</p>
     <p>Search: {{ article.from_rss_or_query }}</p>

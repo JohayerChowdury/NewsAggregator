@@ -1,24 +1,73 @@
 import os
-import swifter
+import numpy as np
+import faiss
+import json
 
 from .embedding_model import get_embeddings_from_chunked_text
 from .openai_client import client
-from .faiss_vector_store import load_faiss_index, write_faiss_index
+from .faiss_vector_store import create_faiss_index
+from .scraper import check_for_required_columns
 
-from .scraper import required_columns
+"""Analyze themes using sentence embeddings and Faiss K-means clustering"""
 
 # source: https://www.perplexity.ai/search/we-want-to-track-all-news-rela-fkvIqwT2Tum_rBEBC8b4zg#8
 
 gpt_model = os.environ.get("GPT_MODEL")
 
-"""Analyze themes using sentence embeddings and Faiss K-means clustering"""
+
+def prepare_embeddings_array(df, column="extracted_content", embedding_dim=384):
+    """
+    Generates embeddings for a dataframe column and returns a properly shaped NumPy array.
+
+    Parameters:
+    - df (pd.DataFrame): The DataFrame containing the text to be embedded.
+    - column (str): The column name containing text to be embedded.
+    - embedding_dim (int): The expected dimension of each embedding.
+
+    Returns:
+    - np.ndarray: A 2D array of shape (N, embedding_dim) suitable for FAISS indexing.
+    """
+
+    try:
+        # Generate embeddings (ensure function `get_embeddings_from_chunked_text` exists)
+        df["vectors"] = df[column].swifter.apply(get_embeddings_from_chunked_text)
+
+        # Handle missing, empty, or malformed embeddings
+        df = df.dropna(subset=["vectors"])
+
+        # Convert to a NumPy array
+        embeddings_array = np.array(df["vectors"].tolist(), dtype=np.float32)
+
+        # Check shape to confirm it's valid for FAISS
+        if embeddings_array.shape[1] != embedding_dim:
+            raise ValueError(
+                f"Embedding dimension mismatch. Expected {embedding_dim}, got {embeddings_array.shape[1]}."
+            )
+
+        return df, embeddings_array
+
+    except Exception as e:
+        print(f"Error preparing embeddings: {e}")
+        return None
 
 
 def analyze_themes(df, num_themes=5):
-    missing = [col for col in required_columns if col not in df.columns]
-    if missing:
-        raise KeyError(f"Missing required columns: {missing}")
-    # TODO: finish
+
+    df, embeddings_array = prepare_embeddings_array(df)
+    index = create_faiss_index(embeddings_array)
+    ncentroids = min(num_themes, len(df) // 2) if len(df) > 20 else 2
+
+    try:
+        kmeans = faiss.Kmeans(384, ncentroids, niter=100, verbose=False)
+        kmeans.train(embeddings_array)
+        _, I = kmeans.index.search(embeddings_array, 1)
+
+        df["theme_cluster"] = I.flatten()
+    except Exception as e:
+        print(f"Error clustering themes: {str(e)}")
+        raise e
+
+    return df, index
 
 
 def generate_theme_label(cluster_texts):
@@ -58,15 +107,13 @@ def generate_theme_label(cluster_texts):
 
 def label_themes(df):
     try:
-        missing = [col for col in required_columns if col not in df.columns]
-        if missing:
-            raise KeyError(f"Missing required columns: {missing}")
-
         theme_labels = {}
-        for cluster_id in df["theme"].unique():
-            cluster_texts = df[df["theme"] == cluster_id]["content"].tolist()
+        for cluster_id in df["theme_cluster"].unique():
+            cluster_texts = df[df["theme_cluster"] == cluster_id][
+                "extracted_content"
+            ].tolist()
             theme_labels[cluster_id] = generate_theme_label(cluster_texts)
-        df["theme_name"] = df["theme"].map(theme_labels)
+        df["theme_name"] = df["theme_cluster"].map(theme_labels)
     except Exception as e:
         print("Error labeling themes:")
         print(e)
@@ -76,7 +123,7 @@ def label_themes(df):
 
 
 def generate_summary(theme_name, articles):
-    prompt = f" '''{' '.join(articles[:3])}''' Question: What is the summary of these articles with the following theme {theme_name}? Answer in 100 words or less."
+    prompt = f" '''{' '.join(articles[:5])}''' Question: Summarize the main insights from these articles with the following theme {theme_name}? Answer in 100 words or less."
     try:
         response = client.chat.completions.create(
             stream=False,
@@ -108,26 +155,23 @@ def generate_summary(theme_name, articles):
 
 
 def generate_jot_notes(df):
-    """Create structured summaries with proper field access"""
-    summaries = []
-    for theme_name, group in df.groupby("theme_name"):
-        articles_list = []
-        for _, row in group.iterrows():
-            # Access fields correctly from the DataFrame structure
-            title = row["entry"].get("title", "No Title")  # Get title from entry object
-            date = row["date_published"].strftime(
-                "%Y-%m-%d"
-            )  # Use date_published column
-            link = row["entry"].get("link", "#")  # Get link from entry object
+    results = []
+    check_for_required_columns(df, ["theme_cluster", "theme_name", "extracted_content"])
+    try:
+        unique_themes = df["theme_cluster"].unique()
+        for theme_id in unique_themes:
+            theme_name = df[df["theme_cluster"] == theme_id]["theme_name"].iloc[0]
+            articles = df[df["theme_cluster"] == theme_id]["extracted_content"].tolist()
+            summary = generate_summary(theme_name, articles)
+            results.append(
+                {"summary": summary, "theme_name": theme_name, "theme_id": theme_id}
+            )
 
-            articles_list.append(f"- **{title}** ({date}): [Read more]({link})")
+    except Exception as e:
+        print("Error generating jot notes:")
+        print(e)
 
-        summaries.append(
-            {
-                "theme": theme_name,
-                "articles": articles_list,
-                "summary": generate_summary(theme_name, group["content"].tolist()),
-            }
-        )
-
-    return sorted(summaries, key=lambda x: len(x["articles"]), reverse=True)
+    # json_string = json.dumps(results)
+    # with open("newsletter.json", "w") as f:
+    #     json.dump(results, f)
+    return results

@@ -1,21 +1,40 @@
-import pickle
-import numpy as np
+# import pickle
 import faiss
 
 
-def load_faiss_index(pickle_file):
-    with open(pickle_file, "rb") as f:
-        items = pickle.load(f)
-    d = len(items[0]["vector"]) if items else 0
-    index = faiss.IndexFlatL2(d)
-    vectors = np.array([item["vector"] for item in items]).astype("float32")
-    index.add(vectors)
-    return index, items
-
-
-def write_faiss_index(index, index_file="large.index"):
+def write_faiss_index(index, index_file="embeddings.index"):
     try:
         faiss.write_index(index, index_file)
     except Exception as e:
         print(f"Error writing Faiss index: {e}")
         pass
+
+
+def read_faiss_index(index_file="embeddings.index"):
+    try:
+        index = faiss.read_index(index_file)
+        return index
+    except Exception as e:
+        print(f"Error reading Faiss index: {e}")
+        return None
+
+
+def create_faiss_index(embeddings_array):
+    try:
+        d = 384  # dimension of the embeddings
+        index = faiss.IndexFlatL2(d)
+        index.add(embeddings_array)
+        write_faiss_index(index)
+        return index
+    except Exception as e:
+        print(f"Error creating Faiss index: {e}")
+        return None
+
+
+def search_faiss_index(index, query, k=5):
+    try:
+        distances, indices = index.search(query, k)
+        return distances, indices
+    except Exception as e:
+        print(f"Error searching Faiss index: {e}")
+        return None, None

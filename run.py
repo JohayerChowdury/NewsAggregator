@@ -153,21 +153,11 @@ def analyze_news():
         """
         For each article, extract the content from the link
         """
-        if "content" not in articles_df.columns:
-            articles_df["content"] = articles_df["link_url"].swifter.apply(
-                extract_clean_article
-            )
-        else:
-            articles_df_without_content = articles_df.loc[
-                articles_df["content"].isnull()
-            ]
-            articles_df_without_content["content"] = articles_df_without_content[
-                "link_url"
-            ].swifter.apply(extract_clean_article)
-            articles_df.update(articles_df_without_content)
-
-        # articles_df, _ = analyze_themes(articles_df)
-        # articles_df = label_themes(articles_df)
+        articles_df["extracted_content"] = articles_df[
+            "extracted_link_url"
+        ].swifter.apply(extract_clean_article)
+        articles_df, _ = analyze_themes(articles_df)
+        articles_df = label_themes(articles_df)
 
     except Exception as e:
         print("Error analyzing news:")
@@ -175,7 +165,6 @@ def analyze_news():
 
     save_df_to_json(articles_df, ARTICLE_FILE)
     return articles_df
-    # return generate_jot_notes(articles_df)
 
 
 @app.route("/publication")
@@ -191,6 +180,25 @@ def publication():
         200,
         {"Content-Type": "text/html"},
     )
+
+
+@app.route("/newsletter")
+def newsletter():
+    newsletter_required_columns = required_columns + [
+        "extracted_content",
+        "vectors",
+        "theme_cluster",
+        "theme_name",
+    ]
+    articles_df = load_json_to_df(
+        ARTICLE_FILE, expected_columns=newsletter_required_columns
+    )
+    check_for_required_columns(articles_df, newsletter_required_columns)
+
+    results = generate_jot_notes(articles_df)
+    # return jsonify(results)
+
+    return render_template("newsletter.html", results=results)
 
 
 if __name__ == "__main__":

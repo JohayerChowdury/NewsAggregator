@@ -4,25 +4,7 @@ from bs4 import BeautifulSoup
 
 def remove_accented_chars(text):
     text = text.encode("ascii", "ignore").decode("ascii")  # Remove non-ASCII characters
-    return text
-
-
-def normalize_html_content(raw_html):
-    """Clean and normalize text from HTML content"""
-
-    # Parse HTML and extract text
-    soup = BeautifulSoup(raw_html, "html.parser")
-    text = soup.get_text(separator=" ")  # Preserve some spacing between elements
-    print("Text before cleaning:", text)
-
-    # Remove excessive whitespace and normalize encoding
-    text = re.sub(r"\s+", " ", text).strip()
-    text = remove_accented_chars(text)
-    # Replace escaped Unicode whitespace characters
     text = text.replace("\\xa0", "\n\n")  # Preserve paragraph breaks
-    # text = text.replace("\\xa0", "\n\n")  # Preserve paragraph breaks
-
-    print("Text after cleaning:", text)
     return text
 
 
@@ -59,8 +41,7 @@ def remove_websites_and_social_media_mentions(text):
     return text
 
 
-# # Expand clean_text() to handle more edge cases
-def clean_text(text):
+def filter_text_content(text):
     """Clean and normalize text"""
     text = re.sub(r"<[^>]+>", "", text)  # Remove HTML tags
     text = re.sub(r"http\S+", "", text)  # Remove URLs
@@ -85,6 +66,7 @@ def clean_text(text):
         r"You can save this article by registering for freehere\.",
         r"Reviews and recommendations are unbiased and products are independently selected\.",
         r"Postmedia may earn an affiliate commission from purchases made through links on this page\.",
+        r"Postmedia is committed to maintaining a lively but civil forum for discussion.",
         r"Written by.*?(?=\s)",  # removes 'Written by' and subsequent content until a space
         r"Last modified:.*?(?=\s)",
         r"Please keep comments relevant and respectful\.",
@@ -95,6 +77,11 @@ def clean_text(text):
         r"Click here to view in browser\.",
         r"Click here to read more\.",
         r"Read more$",
+        r"Comments may take up to an hour to appear on the site.",
+        r"You will receive an email if there is a reply to your comment, an update to a thread you follow or if a user you follow comments.",
+        r"For more information *?click here\.",
+        r"By continuing to use our site, you agree to our Terms of Use and Privacy Policy."
+        r"Visit our Community Guidelines",
         # Add more patterns as needed
     ]
 
@@ -104,5 +91,15 @@ def clean_text(text):
 
     # Final cleanup: remove any extra spaces that may have resulted
     text = re.sub(r"\s+", " ", text).strip()
+
+    return text
+
+
+def normalize_html_content(raw_html):
+    # Parse HTML and extract text
+    soup = BeautifulSoup(raw_html, "html.parser")
+    text = soup.get_text(separator=" ")  # Preserve some spacing between elements
+
+    text = filter_text_content(text)
 
     return text

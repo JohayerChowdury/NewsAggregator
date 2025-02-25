@@ -7,7 +7,7 @@
   {% for article in articles %}
   <article>
     <h2>
-      <a href="{{ article.link_url or article.entry.link }}">{{ article.title }}</a>
+      <a href="{{ article.extracted_link_url or article.link }}">{{ article.title }}</a>
     </h2>
     <p>Published: {{ article.date_published }}</p>
     <p>Source: {{ article.source }}</p>
