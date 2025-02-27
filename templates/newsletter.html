@@ -9,6 +9,13 @@
     {% for result in results %}
     <h2>{{ result.theme_name }}</h2>
     <p>{{ result.summary }}</p>
+    <ul>
+      {% for article in result.articles %}
+      <li>
+        <a href="{{ article.extracted_link_url }}">{{ article.title }}</a>
+      </li>
+      {% endfor %}
+    </ul>
     {% endfor %}
   </body>
 </html>

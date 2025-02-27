@@ -2,9 +2,11 @@ import os
 import numpy as np
 import faiss
 import json
+import swifter
 
 from .embedding_model import get_embeddings_from_chunked_text
-from .openai_client import client
+from .openai_client import openai_client
+from .webflow_client import update_collection
 from .faiss_vector_store import create_faiss_index
 from .scraper import check_for_required_columns
 
@@ -13,6 +15,7 @@ from .scraper import check_for_required_columns
 # source: https://www.perplexity.ai/search/we-want-to-track-all-news-rela-fkvIqwT2Tum_rBEBC8b4zg#8
 
 gpt_model = os.environ.get("GPT_MODEL")
+print(f"Using GPT model: {gpt_model}")
 
 
 def prepare_embeddings_array(df, column="extracted_content", embedding_dim=384):
@@ -51,7 +54,7 @@ def prepare_embeddings_array(df, column="extracted_content", embedding_dim=384):
         return None
 
 
-def analyze_themes(df, num_themes=5):
+def analyze_themes(df, num_themes=20):
 
     df, embeddings_array = prepare_embeddings_array(df)
     index = create_faiss_index(embeddings_array)
@@ -73,7 +76,7 @@ def analyze_themes(df, num_themes=5):
 def generate_theme_label(cluster_texts):
     prompt = f"'''{' '.join(cluster_texts[:3])}''' Question: What is the connecting theme among these articles in 5 words or less?"
     try:
-        response = client.chat.completions.create(
+        response = openai_client.chat.completions.create(
             stream=False,
             model=gpt_model,
             messages=[
@@ -123,9 +126,9 @@ def label_themes(df):
 
 
 def generate_summary(theme_name, articles):
-    prompt = f" '''{' '.join(articles[:5])}''' Question: Summarize the main insights from these articles with the following theme {theme_name}? Answer in 100 words or less."
+    prompt = f" '''{' '.join(articles[:5])}''' Question: These articles are grouped with the following theme {theme_name}. What is the summary of these articles? Answer in 100 words or less."
     try:
-        response = client.chat.completions.create(
+        response = openai_client.chat.completions.create(
             stream=False,
             model=gpt_model,
             messages=[
@@ -158,20 +161,22 @@ def generate_jot_notes(df):
     results = []
     check_for_required_columns(df, ["theme_cluster", "theme_name", "extracted_content"])
     try:
-        unique_themes = df["theme_cluster"].unique()
-        for theme_id in unique_themes:
+        unique_theme_groups = df.groupby("theme_cluster")
+        for theme_id, group in unique_theme_groups:
             theme_name = df[df["theme_cluster"] == theme_id]["theme_name"].iloc[0]
-            articles = df[df["theme_cluster"] == theme_id]["extracted_content"].tolist()
-            summary = generate_summary(theme_name, articles)
+            article_corpuses = df[df["theme_cluster"] == theme_id][
+                "extracted_content"
+            ].tolist()
+            summary = generate_summary(theme_name, article_corpuses)
             results.append(
-                {"summary": summary, "theme_name": theme_name, "theme_id": theme_id}
+                {"summary": summary, "theme_name": theme_name, "articles": group}
             )
 
+        # summaries_collection_id = "67be1d69551e9bfbece97364"
+        # updated_webflow_collection_response = update_collection(
+        #     summaries_collection_id, results
+        # )
     except Exception as e:
         print("Error generating jot notes:")
         print(e)
-
-    # json_string = json.dumps(results)
-    # with open("newsletter.json", "w") as f:
-    #     json.dump(results, f)
     return results

@@ -6,7 +6,7 @@ import sqlite3
 
 from server.utils.scraper import (
     load_json_to_df,
-    save_df_to_json,
+    save_df_to_file,
     get_articles,
     extract_clean_article,
     check_for_required_columns,
@@ -15,16 +15,22 @@ from server.utils.scraper import (
     required_columns,
 )
 from server.utils.ml_publication import analyze_themes, label_themes, generate_jot_notes
+from server.utils.embedding_model import get_model_embeddings
 
 app = Flask(__name__)
 # CORS(app)
 
-ARTICLE_FILE = "articles.json"
+JSON_ARTICLE_FILE = "articles.json"
+CSV_ARTICLE_FILE = "articles.csv"
 
 
 @app.route("/")
 def index():
-    articles_df = load_json_to_df(ARTICLE_FILE, expected_columns=required_columns)
+    articles_df = get_articles(
+        article_file=JSON_ARTICLE_FILE,
+        queries=GOOGLE_NEWS_SEARCH_QUERIES,
+        decode_gnews=True,
+    )
 
     articles = articles_df.to_dict(orient="records")
 
@@ -79,11 +85,12 @@ def index():
 
 @app.route("/search")
 def search():
-    query = request.args.get("query") or ""
+    articles_df = load_json_to_df(JSON_ARTICLE_FILE, expected_columns=required_columns)
+    query = request.args.get("query", "").strip()
+    if not query:
+        return "No query provided", 400, {"Content-Type": "text/plain"}
 
-    articles_df = get_articles(
-        article_file=ARTICLE_FILE, queries=GOOGLE_NEWS_SEARCH_QUERIES, decode_gnews=True
-    )
+    # query_embedding = get_model_embeddings([query])
 
     results = [
         article
@@ -144,7 +151,7 @@ def search():
 
 # Main execution function
 def analyze_news():
-    articles_df = load_json_to_df(ARTICLE_FILE, expected_columns=required_columns)
+    articles_df = load_json_to_df(JSON_ARTICLE_FILE, expected_columns=required_columns)
 
     check_for_required_columns(articles_df, required_columns)
 
@@ -163,7 +170,8 @@ def analyze_news():
         print("Error analyzing news:")
         print(e)
 
-    save_df_to_json(articles_df, ARTICLE_FILE)
+    save_df_to_file(articles_df, JSON_ARTICLE_FILE, "json")
+    save_df_to_file(articles_df, CSV_ARTICLE_FILE, "csv")
     return articles_df
 
 
@@ -176,9 +184,9 @@ def publication():
         return "No results found", 404, {"Content-Type": "text/plain"}
 
     return (
-        results.head(2).to_html(),
+        "Publication complete. Please go to /newsletter to view the results.",
         200,
-        {"Content-Type": "text/html"},
+        {"Content-Type": "text/plain"},
     )
 
 
@@ -191,7 +199,7 @@ def newsletter():
         "theme_name",
     ]
     articles_df = load_json_to_df(
-        ARTICLE_FILE, expected_columns=newsletter_required_columns
+        JSON_ARTICLE_FILE, expected_columns=newsletter_required_columns
     )
     check_for_required_columns(articles_df, newsletter_required_columns)
 

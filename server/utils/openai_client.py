@@ -1,5 +1,5 @@
-import openai
 import os
+import openai
 
 open_ai_api_key = os.environ.get("OPENAI_API_KEY")
 llm_endpoint = os.environ.get("LLM_ENDPOINT")
@@ -9,8 +9,7 @@ open_ai_project = os.environ.get("OPENAI_PROJECT_ID")
 # comment out the print statement
 print(open_ai_api_key, llm_endpoint, open_ai_organization, open_ai_project)
 
-# TODO: create Dockerfile to access ollama server
-client = openai.OpenAI(
+openai_client = openai.OpenAI(
     api_key=open_ai_api_key,
     base_url=llm_endpoint,
     organization=open_ai_organization,

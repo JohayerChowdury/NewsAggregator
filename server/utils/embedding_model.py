@@ -3,7 +3,7 @@ import numpy as np
 from sentence_transformers import SentenceTransformer
 import openai
 
-from .openai_client import client
+from .openai_client import openai_client
 
 EMBEDDING_MODEL = "all-MiniLM-L6-v2"
 _embedding_model_instance = None
@@ -27,14 +27,17 @@ def get_model_embeddings(text_corpus):
     return model.encode(text_corpus)
 
 
-def get_embeddings_from_chunked_text(text, chunk_size=256, overlap=50):
+def get_embeddings_from_chunked_text(text, chunk_size=256, overlap=50, openai=False):
     """Split text into overlapping chunks to maintain context"""
     words = text.split()
     chunks = []
     for i in range(0, len(words), chunk_size - overlap):
         chunk = " ".join(words[i : i + chunk_size])
         chunks.append(chunk)
-    embeddings = get_model_embeddings(chunks)
+    if openai:
+        embeddings = get_openai_embeddings(chunks)
+    else:
+        embeddings = get_model_embeddings(chunks)
     if len(embeddings) == 0:  # Properly check if embeddings list is empty
         return [0.0] * 384  # Return zero vector
 
@@ -44,7 +47,9 @@ def get_embeddings_from_chunked_text(text, chunk_size=256, overlap=50):
 def get_openai_embeddings(texts):
     try:
         """Batch generate embeddings with error handling"""
-        response = client.embeddings.create(input=texts, model="text-embedding-3-small")
+        response = openai_client.embeddings.create(
+            input=texts, model="text-embedding-3-small"
+        )
         return [item.embedding for item in response.data]
 
     except openai.APIError as e:

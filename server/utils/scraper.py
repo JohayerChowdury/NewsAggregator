@@ -34,12 +34,12 @@ rss_feeds_file.close()
 
 # TODO: Yunji provided financing glossary, look into those terms and add them here
 GOOGLE_NEWS_SEARCH_QUERIES = [
-    # "Canadian accessory dwelling unit",  # NOTE: looks like adding "Canadian" doesn't work well
-    # "Canadian mortgage regulations",
-    # "Canadian zoning laws in Toronto",
-    # "zoning laws",
-    # "accessory dwelling unit",
-    # "mortgage regulations",
+    "Canadian accessory dwelling unit",  # NOTE: looks like adding "Canadian" doesn't work well
+    "Canadian mortgage regulations",
+    "Canadian zoning laws in Toronto",
+    "zoning laws",
+    "accessory dwelling unit",
+    "mortgage regulations",
     # # TODO: look into how these queries are being used
     # "purchase financing",
     # "renovation financing",
@@ -55,6 +55,11 @@ GOOGLE_NEWS_SEARCH_QUERIES = [
     # "multiplex purchase",
     # "multiplex refinance",
 ]
+
+# PROXY_ADDRESSES = {
+#     "http": "http://72.206.181.123:4145",
+#     "https": "http://67.43.227.229",
+# }
 
 # Custom headers to mimic a real browser
 HEADERS = {
@@ -80,11 +85,16 @@ def load_json_to_df(filename: str, expected_columns: list) -> pd.DataFrame:
         return pd.DataFrame(columns=expected_columns)
 
 
-def save_df_to_json(df: pd.DataFrame, filename: str) -> None:
+def save_df_to_file(df: pd.DataFrame, filename: str, file_format: str) -> None:
     try:
-        """Save a DataFrame to a JSON file."""
         print(f"Saving {filename}...")
-        df.to_json(filename, orient="records", indent=4)  # Save as a list of records
+        if file_format == "json":
+            """Save a DataFrame to a JSON file."""
+            df.to_json(filename, orient="records", indent=4)
+        elif file_format == "csv":
+            df.to_csv(filename, index=False)
+        else:
+            raise ValueError(f"Invalid file format: {file_format}")
         print(f"Saved {filename}.")
     except Exception as e:
         print(f"Error saving {filename}: {e}")
@@ -237,7 +247,7 @@ def get_articles(article_file, queries=[""], decode_gnews=False):
     except Exception as e:
         print(f"Error processing Google News: {e}")
 
-    save_df_to_json(articles_df, article_file)
+    save_df_to_file(articles_df, article_file, "json")
     return articles_df
 
 
