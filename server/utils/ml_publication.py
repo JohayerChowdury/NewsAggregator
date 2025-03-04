@@ -163,13 +163,16 @@ def generate_jot_notes(df):
     try:
         unique_theme_groups = df.groupby("theme_cluster")
         for theme_id, group in unique_theme_groups:
-            theme_name = df[df["theme_cluster"] == theme_id]["theme_name"].iloc[0]
-            article_corpuses = df[df["theme_cluster"] == theme_id][
-                "extracted_content"
-            ].tolist()
+            articles_json = json.loads(group.to_json(orient="records"))
+            theme_name = group["theme_name"].unique()[0]
+            article_corpuses = group["extracted_content"].tolist()
             summary = generate_summary(theme_name, article_corpuses)
             results.append(
-                {"summary": summary, "theme_name": theme_name, "articles": group}
+                {
+                    "summary": summary,
+                    "theme_name": theme_name,
+                    "articles": articles_json,
+                }
             )
 
         # summaries_collection_id = "67be1d69551e9bfbece97364"
