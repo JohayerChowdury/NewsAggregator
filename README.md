@@ -1,7 +1,5 @@
 # NewsAggregator
 
-## Internal tool for Highline Beta - Finance Hub
-
 ### Steps to Run the News Aggregator App Locally
 
 ### :bangbang:  First Time
