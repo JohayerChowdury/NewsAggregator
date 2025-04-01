@@ -27,6 +27,8 @@ class NewsItem(db.Model):
     article_title: Mapped[str] = mapped_column(String, nullable=False)
     article_news_source: Mapped[str] = mapped_column(String, nullable=False)
     article_author: Mapped[str | None] = mapped_column(String, nullable=True)
+    article_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    article_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     ## generated fields
     original_url: Mapped[str | None] = mapped_column(String, nullable=True)
@@ -59,6 +61,8 @@ class NewsItem(db.Model):
             self.original_url = article_data["link"]
         except KeyError:
             self.original_url = None
+
+        self.selected_for_display = kwargs.get("selected_for_display", False)
 
     @property
     def article_data(self):

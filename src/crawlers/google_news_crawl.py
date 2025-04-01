@@ -9,8 +9,8 @@ from ..utils import get_news_search_dates
 # TODO: Yunji provided financing glossary, look into those terms and add them here
 GOOGLE_NEWS_SEARCH_QUERIES = [
     # "Canadian accessory dwelling unit",  # NOTE: looks like adding "Canadian" doesn't work well
-    # "Canadian mortgage regulations",
-    "zoning laws in Toronto, Ontario",
+    "Canadian mortgage regulations",
+    # "zoning laws in Toronto, Ontario",
     # "accessory dwelling unit",
     # "mortgage regulations",
     # # TODO: look into how these queries are being used
@@ -53,7 +53,7 @@ def search_news(query, from_=None, to_=None):
     return articles
 
 
-def retrieve_articles_from_google_news(decode_gnews: bool = False) -> list:
+def retrieve_articles_from_google_news(decode_gnews: bool = True) -> list:
     entries = []
     for query in GOOGLE_NEWS_SEARCH_QUERIES:
         articles_from_query = search_news(query)

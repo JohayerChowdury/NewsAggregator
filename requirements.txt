@@ -1,6 +1,11 @@
 ## General
 python-dotenv
 
+## Web server
+flask
+# flask_cors
+flask[async]
+
 ## Web crawling and scraping
 requests
 requests-cache
@@ -36,10 +41,7 @@ llama-index-core
 chromadb
 # faiss-cpu
 
-## Web server
-flask
-# flask_cors
-# flask[async]
+
 
 ## Deployment
 gunicorn

@@ -4,19 +4,61 @@
 <!-- content -->
 {% block content %}
 <div class="articles">
-  {% for article in articles %}
+  {% for newsItem in news_items %}
   <article>
     <h2>
-      <a href="{{ article.original_url or article.article_link }}">{{ article.article_title }}</a>
+      <a href="{{ newsItem.article_link or newsItem.original_url }}">
+        {{ newsItem.article_title }}
+      </a>
     </h2>
-    <p>Published: {{ article.article_date_published }}</p>
-    <p>Source: {{ article.article_news_source }}</p>
-    <p>Author: {{ article.article_author or 'Unknown' }}</p>
-    <p>Category: {{ article.category or 'Uncategorized' }}</p>
-    <p>Summary: {{ article.llm_generated_summary or 'No summary available' }}</p>
+    <div class="article-meta">
+      <div class="meta-info">
+        <p>Published: {{ newsItem.article_date_published }}</p>
+        <p>Source: {{ newsItem.article_news_source }}</p>
+        <p>Author: {{ newsItem.article_author or 'Unknown' }}</p>
+      </div>
+      <div class="toggle-display">
+        <label for="toggle-{{ newsItem.id }}">
+          <input
+            type="checkbox"
+            id="toggle-{{ newsItem.id }}"
+            class="toggle-display"
+            data-id="{{ newsItem.id }}"
+            {%
+            if
+            newsItem.display
+            %}checked{%
+            endif
+            %} />
+          Download to CSV
+        </label>
+      </div>
+    </div>
+    <div class="article-details">
+      <p>Category: {{ newsItem.category or 'Uncategorized' }}</p>
+      <p>Summary: {{ newsItem.llm_generated_summary or 'No summary available' }}</p>
+    </div>
   </article>
   {% endfor %}
 </div>
+<button id="download-csv" class="btn btn-primary">Download</button>
+<script>
+  document.querySelectorAll(".toggle-display").forEach((checkbox) => {
+    checkbox.addEventListener("change", (event) => {
+      const articleId = event.target.dataset.id;
+      const isSelected = event.target.checked;
+      fetch(`/api/toggle_display/${articleId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ selected: isSelected }),
+      });
+    });
+  });
+
+  document.getElementById("download-csv").addEventListener("click", () => {
+    window.location.href = "/api/download_csv";
+  });
+</script>
 {% endblock %}
 
 <!-- pagination -->

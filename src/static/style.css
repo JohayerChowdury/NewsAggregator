@@ -99,6 +99,22 @@ article p {
   line-height: 1.6em;
 }
 
+.article-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.meta-info p {
+  margin: 0;
+  /* line-height: 1.4em; */
+}
+
+.article-details {
+  margin-top: 10px;
+}
+
 .pagination {
   text-align: center;
   margin: 20px 0;

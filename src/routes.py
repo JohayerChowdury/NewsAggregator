@@ -1,13 +1,15 @@
 import json
+import csv
 
-from flask import Flask, request, render_template
+from flask import Flask, request, render_template, Response, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import distinct
 
 from .models import NewsItem
 from .crawlers import rss_feed_crawl, google_news_crawl
 
-# from .scraper
+from .scrapers.beautifulsoup_scraper import extract_clean_article
+from .scrapers.crawl4ai_scraper import extract_clean_article_crawl4ai
 
 
 def get_all_sources(db: SQLAlchemy):
@@ -55,7 +57,7 @@ def register_routes(app: Flask, db: SQLAlchemy):
 
             return render_template(
                 "index.html",
-                articles=paginated_articles.items,
+                news_items=paginated_articles.items,
                 sources=unfiltered_sources,
                 selected_sources=selected_sources,
                 sort_date=sort_date,
@@ -133,53 +135,101 @@ def register_routes(app: Flask, db: SQLAlchemy):
             # google_queries=GOOGLE_NEWS_SEARCH_QUERIES,
         )
 
-    @app.route("/api/crawl", methods=["POST"])
-    def api_crawl():
-        """
-        API endpoint to crawl for articles and add them to the database.
-        """
-        news_items = []
+    @app.route("/api/relevant-news", methods=["POST"])
+    async def relevant_news():
+        if request.method == "POST":
 
-        # # Crawl articles using the RSS feed crawler
-        crawled_articles_from_rss = rss_feed_crawl.main()
-        news_items.extend(crawled_articles_from_rss)
+            async def process_news_items(news_items):
+                debug_news_items = []
+                new_articles_count = 0
 
-        # Crawl articles using the Google News crawler
-        crawled_articles_from_google = google_news_crawl.main()
-        news_items.extend(crawled_articles_from_google)
+                for entry in news_items:
+                    article_data = entry["data_entry"]
+                    data_source = entry.get("data_source", "Unknown")
+                    article_link = entry["article_link"]
 
-        new_articles_count = 0
-        for entry in news_items:
+                    # Check if the article already exists in the database
+                    existing_article = NewsItem.query.filter_by(
+                        article_link=article_link
+                    ).first()
 
-            article_data = entry["data_entry"]
+                    if not existing_article:
+                        # # Scrape article data asynchronously
+                        # article_text = await extract_clean_article_crawl4ai(
+                        #     article_link
+                        # )
 
-            # data_source
-            try:
-                data_source = entry["data_source"]
-            except KeyError:
-                data_source = "Unknown"
+                        # Create a new NewsItem object
+                        news_item = NewsItem(
+                            data_source=data_source,
+                            article_data=article_data,
+                            article_link=article_link,
+                            # article_text=article_text,
+                        )
+                        db.session.add(news_item)
+                        new_articles_count += 1
+                        debug_news_items.append(article_data)
 
-            # article_link
-            article_link = entry["article_link"]
+                # Commit the new articles to the database
+                db.session.commit()
+                return debug_news_items, new_articles_count
 
-            # Check if the article already exists in the database
-            existing_article = NewsItem.query.filter_by(
-                article_link=article_link
-            ).first()
+            news_items = []
 
-            if not existing_article:
-                # Create a new Article object
-                news_item = NewsItem(
-                    data_source=data_source,
-                    article_data=article_data,
-                    article_link=article_link,
-                )
-                db.session.add(news_item)
-                new_articles_count += 1
+            # Crawl articles using the RSS feed crawler
+            crawled_articles_from_rss = rss_feed_crawl.main()
+            news_items.extend(crawled_articles_from_rss)
 
-        # Commit the new articles to the database
-        db.session.commit()
+            # # Crawl articles using the Google News crawler
+            # crawled_articles_from_google = google_news_crawl.main()
+            # news_items.extend(crawled_articles_from_google)
 
-        return {
-            "message": f"{new_articles_count} new articles added to the database.",
-        }, 200
+            # Process the news items asynchronously
+            debug_news_items, new_articles_count = await process_news_items(news_items)
+
+            return (
+                jsonify(
+                    {
+                        "message": f"{new_articles_count} new articles added to the database.",
+                        "debug_news_items": debug_news_items,
+                    }
+                ),
+                200,
+            )
+
+    @app.route("/api/toggle_display/<int:article_id>", methods=["POST"])
+    def toggle_display(article_id):
+        data = request.get_json()
+        selected = data.get("selected", False)
+        article = NewsItem.query.get(article_id)
+        if article:
+            article.selected_for_display = selected
+            db.session.commit()
+            return {"message": "Updated successfully"}, 200
+        return {"message": "Article not found"}, 404
+
+    @app.route("/api/download_csv", methods=["GET"])
+    def download_csv():
+        articles = NewsItem.query.filter_by(selected_for_display=True).all()
+        csv_data = [["Title", "Link", "Source", "Published Date"]]
+        for article in articles:
+            csv_data.append(
+                [
+                    article.article_title,
+                    article.article_link,
+                    article.article_news_source,
+                    article.article_date_published,
+                ]
+            )
+
+        def generate():
+            for row in csv_data:
+                yield ",".join(map(str, row)) + "\n"
+
+        return Response(
+            generate(),
+            mimetype="text/csv",
+            headers={
+                "Content-Disposition": "attachment;filename=selected_articles.csv"
+            },
+        )
