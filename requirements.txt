@@ -40,11 +40,3 @@ llama-index-core
 ## Vector DB
 chromadb
 # faiss-cpu
-
-
-
-## Deployment
-gunicorn
-
-## Miscellaneous
-ipykernel

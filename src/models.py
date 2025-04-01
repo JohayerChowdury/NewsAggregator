@@ -21,6 +21,8 @@ class NewsItem(db.Model):
     article_link: Mapped[str] = mapped_column(
         String, nullable=False, unique=True
     )  # URL of the article
+    category: Mapped[str | None] = mapped_column(String, nullable=False)
+    llm_generated_summary: Mapped[str | None] = mapped_column(Text, nullable=False)
 
     ## extracted fields
     article_date_published: Mapped[DateTime] = mapped_column(DateTime, nullable=False)
@@ -33,32 +35,30 @@ class NewsItem(db.Model):
     ## generated fields
     original_url: Mapped[str | None] = mapped_column(String, nullable=True)
     selected_for_display: Mapped[bool] = mapped_column(Boolean, default=False)
-    category: Mapped[str | None] = mapped_column(String, nullable=True)
-    llm_generated_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     def __repr__(self):
         return f"<Article {self.article_title}>"
 
-    def __init__(self, data_source, article_data, article_link, **kwargs):
+    def __init__(self, data_source, data, article_link, **kwargs):
         self.data_source = data_source
-        self.data_json = json.dumps(article_data)
+        self.data_json = json.dumps(data)
         self.article_link = article_link
 
-        self.article_date_published = standardize_date(article_data["published"])
-        self.article_title = article_data["title"]
+        self.article_date_published = standardize_date(data["published"])
+        self.article_title = data["title"]
 
         try:
-            self.article_news_source = article_data["source"]["title"]
+            self.article_news_source = data["source"]["title"]
         except KeyError:
             self.article_news_source = data_source
 
         try:
-            self.article_author = article_data["author"]
+            self.article_author = data["author"]
         except KeyError:
             self.article_author = None
 
         try:
-            self.original_url = article_data["link"]
+            self.original_url = data["link"]
         except KeyError:
             self.original_url = None
 

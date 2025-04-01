@@ -27,6 +27,8 @@ GOOGLE_NEWS_SEARCH_QUERIES = [
     # "multiplex construction",
     # "multiplex purchase",
     # "multiplex refinance",
+    "middle housing",
+    "corporate programs tied to housing",
 ]
 
 # Initialize GoogleNews with Canadian settings
@@ -60,8 +62,8 @@ def retrieve_articles_from_google_news(decode_gnews: bool = True) -> list:
         for entry in articles_from_query:
             entries.append(
                 {
-                    "data_source": f"Google News: {query}",
-                    "data_entry": entry,
+                    "data_source": f"Google News Search: {query}",
+                    "data": entry,
                     "article_link": (
                         decode_gnews_url(entry.link) if decode_gnews else entry.link
                     ),

@@ -9,7 +9,7 @@ from .models import NewsItem
 from .crawlers import rss_feed_crawl, google_news_crawl
 
 from .scrapers.beautifulsoup_scraper import extract_clean_article
-from .scrapers.crawl4ai_scraper import extract_clean_article_crawl4ai
+from .scrapers.crawl4ai_scraper import Crawl4AIScraper
 
 
 def get_all_sources(db: SQLAlchemy):
@@ -138,51 +138,96 @@ def register_routes(app: Flask, db: SQLAlchemy):
     @app.route("/api/relevant-news", methods=["POST"])
     async def relevant_news():
         if request.method == "POST":
+            scraper = Crawl4AIScraper()
 
-            async def process_news_items(news_items):
+            async def process_news_items(news_items: list):
+                """
+                Process a list of news items asynchronously.
+                """
                 debug_news_items = []
                 new_articles_count = 0
 
-                for entry in news_items:
-                    article_data = entry["data_entry"]
-                    data_source = entry.get("data_source", "Unknown")
-                    article_link = entry["article_link"]
+                for news_item in news_items:
+                    try:
+                        if not is_article_in_database(news_item["article_link"]):
+                            article_text = await scrape_article(
+                                scraper, news_item["article_link"]
+                            )
+                            if article_text:
+                                save_article_to_database(news_item, article_text)
+                                debug_news_items.append(
+                                    {
+                                        "article_link": news_item["article_link"],
+                                        "article_text": article_text,
+                                    }
+                                )
+                            else:
+                                save_article_to_database(news_item, None)
+                                debug_news_items.append(
+                                    {
+                                        "article_link": news_item["article_link"],
+                                        "article_text": None,
+                                    }
+                                )
 
-                    # Check if the article already exists in the database
-                    existing_article = NewsItem.query.filter_by(
-                        article_link=article_link
-                    ).first()
+                            new_articles_count += 1
+                    except Exception as e:
+                        print(f"Error processing news item: {news_item}. Error: {e}")
 
-                    if not existing_article:
-                        # # Scrape article data asynchronously
-                        # article_text = await extract_clean_article_crawl4ai(
-                        #     article_link
-                        # )
-
-                        # Create a new NewsItem object
-                        news_item = NewsItem(
-                            data_source=data_source,
-                            article_data=article_data,
-                            article_link=article_link,
-                            # article_text=article_text,
-                        )
-                        db.session.add(news_item)
-                        new_articles_count += 1
-                        debug_news_items.append(article_data)
-
-                # Commit the new articles to the database
                 db.session.commit()
                 return debug_news_items, new_articles_count
+
+            def is_article_in_database(article_link: str) -> bool:
+                """
+                Check if an article already exists in the database.
+                """
+                existing_article = NewsItem.query.filter_by(
+                    article_link=article_link
+                ).first()
+                return existing_article is not None
+
+            async def scrape_article(
+                scraper: Crawl4AIScraper, article_link: str
+            ) -> str:
+                """
+                Scrape the article content using the scraper.
+                """
+                try:
+                    return await scraper._process_single_url(article_link)
+                except Exception as e:
+                    print(f"Error scraping article: {article_link}. Error: {e}")
+                    return None
+
+            def save_article_to_database(news_item: dict, article_text: str):
+                """
+                Save a new article to the database.
+                """
+                try:
+                    new_article = NewsItem(
+                        data_source=news_item["data_source"],
+                        data=news_item["data"],
+                        article_link=news_item["article_link"],
+                        # article_text=article_text,
+                    )
+                    db.session.add(new_article)
+                except Exception as e:
+                    print(f"Error saving article to database: {news_item}. Error: {e}")
 
             news_items = []
 
             # Crawl articles using the RSS feed crawler
-            crawled_articles_from_rss = rss_feed_crawl.main()
-            news_items.extend(crawled_articles_from_rss)
+            try:
+                crawled_articles_from_rss = rss_feed_crawl.main()
+                news_items.extend(crawled_articles_from_rss)
+            except Exception as e:
+                print(f"Error crawling RSS feed: {e}")
 
             # # Crawl articles using the Google News crawler
-            # crawled_articles_from_google = google_news_crawl.main()
-            # news_items.extend(crawled_articles_from_google)
+            # try:
+            #     crawled_articles_from_google = google_news_crawl.main()
+            #     news_items.extend(crawled_articles_from_google)
+            # except Exception as e:
+            #     print(f"Error crawling Google News: {e}")
 
             # Process the news items asynchronously
             debug_news_items, new_articles_count = await process_news_items(news_items)

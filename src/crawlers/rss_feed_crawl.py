@@ -45,7 +45,7 @@ def retrieve_articles_from_rss_feeds() -> list:
             entries.append(
                 {
                     "data_source": f"RSS Feed: {source}",
-                    "data_entry": entry,
+                    "data": entry,
                     "article_link": entry["link"],
                 }
             )
