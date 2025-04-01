@@ -1,20 +1,13 @@
 import os
 import numpy as np
-import faiss
 import json
-import swifter
 
-from .embedding_model import get_embeddings_from_chunked_text
-from .openai_client import openai_client
-from .webflow_client import update_collection
-from .faiss_vector_store import create_faiss_index
+from .utils.webflow_client import update_collection
 from .scraper import check_for_required_columns
-
-"""Analyze themes using sentence embeddings and Faiss K-means clustering"""
 
 # source: https://www.perplexity.ai/search/we-want-to-track-all-news-rela-fkvIqwT2Tum_rBEBC8b4zg#8
 
-gpt_model = os.environ.get("GPT_MODEL")
+gpt_model = os.environ.get("LLM_MODEL")
 print(f"Using GPT model: {gpt_model}")
 
 
@@ -32,8 +25,7 @@ def prepare_embeddings_array(df, column="extracted_content", embedding_dim=384):
     """
 
     try:
-        # Generate embeddings (ensure function `get_embeddings_from_chunked_text` exists)
-        df["vectors"] = df[column].swifter.apply(get_embeddings_from_chunked_text)
+        # Generate embeddings
 
         # Handle missing, empty, or malformed embeddings
         df = df.dropna(subset=["vectors"])
@@ -54,28 +46,13 @@ def prepare_embeddings_array(df, column="extracted_content", embedding_dim=384):
         return None
 
 
-def analyze_themes(df, num_themes=20):
-
-    df, embeddings_array = prepare_embeddings_array(df)
-    index = create_faiss_index(embeddings_array)
-    ncentroids = min(num_themes, len(df) // 2) if len(df) > 20 else 2
-
-    try:
-        kmeans = faiss.Kmeans(384, ncentroids, niter=100, verbose=False)
-        kmeans.train(embeddings_array)
-        _, I = kmeans.index.search(embeddings_array, 1)
-
-        df["theme_cluster"] = I.flatten()
-    except Exception as e:
-        print(f"Error clustering themes: {str(e)}")
-        raise e
-
-    return df, index
+def analyze_themes(df, num_themes=20): ...
 
 
 def generate_theme_label(cluster_texts):
     prompt = f"'''{' '.join(cluster_texts[:3])}''' Question: What is the connecting theme among these articles in 5 words or less?"
     try:
+        '''
         response = openai_client.chat.completions.create(
             stream=False,
             model=gpt_model,
@@ -85,10 +62,10 @@ def generate_theme_label(cluster_texts):
                     "content": [
                         {
                             "type": "text",
-                            "text": """ 
-                                You are an AI expert journalist in the housing and finance sector, especially in Canada. 
+                            "text": """
+                                You are an AI expert journalist in the housing and finance sector, especially in Canada.
                                 You strictly answer questions without unnecessary introductions or conclusions.
-                                You are provided with a document that represent several news articles, delimited by triple quotes and a question. 
+                                You are provided with a document that represent several news articles, delimited by triple quotes and a question.
                                 Your task is to answer the question using only the provided document.
                                 """,
                         }
@@ -99,9 +76,9 @@ def generate_theme_label(cluster_texts):
             max_tokens=10,
         )
         response_text = response.choices[0].message.content
-        # response_text = response.message.content
         print(f"Generated theme label: {response_text}")
-        return response_text
+        '''
+        return
     except Exception as e:
         print(f"Error generating theme label:")
         print(e)
@@ -128,6 +105,7 @@ def label_themes(df):
 def generate_summary(theme_name, articles):
     prompt = f" '''{' '.join(articles[:5])}''' Question: These articles are grouped with the following theme {theme_name}. What is the summary of these articles? Answer in 100 words or less."
     try:
+        '''
         response = openai_client.chat.completions.create(
             stream=False,
             model=gpt_model,
@@ -138,9 +116,9 @@ def generate_summary(theme_name, articles):
                         {
                             "type": "text",
                             "text": """
-                                You are an AI expert journalist in the housing and finance sector, especially in Canada. 
+                                You are an AI expert journalist in the housing and finance sector, especially in Canada.
                                 You strictly answer questions without unnecessary introductions or conclusions.
-                                You are provided with several documents that represent several news articles, delimited by triple quotes and a question. 
+                                You are provided with several documents that represent several news articles, delimited by triple quotes and a question.
                                 Your task is to answer the question using only the provided document.
                                 """,
                         }
@@ -150,8 +128,8 @@ def generate_summary(theme_name, articles):
             ],
             max_tokens=100,
         )
-        return response.choices[0].message.content
-        # return response.message.content
+        '''
+        return
     except Exception as e:
         print(f"Error generating summary: {str(e)}")
         return "Summary unavailable due to an error."

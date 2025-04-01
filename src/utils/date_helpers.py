@@ -17,7 +17,7 @@ def standardize_date(date_input):
         else:
             raise ValueError("Unsupported date format.")
 
-        return d.strftime("%Y-%m-%d %H:%M:%S")  # Standardized storage format
+        return datetime(d.year, d.month, d.day)
     except Exception as e:
         print(f"Error formatting date: {e}")
         return date_input
@@ -37,4 +37,6 @@ def get_news_search_dates():
         days=1
     )  # Add 1 day to today's date to include today's articles
     six_months_ago = today - relativedelta(months=6)
-    return standardize_date(today), standardize_date(six_months_ago)
+    return today.strftime("%Y-%m-%d %H:%M:%S"), six_months_ago.strftime(
+        "%Y-%m-%d %H:%M:%S"
+    )

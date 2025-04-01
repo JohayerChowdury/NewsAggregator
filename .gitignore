@@ -1,7 +1,3 @@
-articles.csv
-articles.json
-articles.db
-
 # Environments
 .env
 .venv
@@ -14,3 +10,5 @@ venv.bak/
 # Python
 __pycache__/
 cache.sqlite
+
+instance/

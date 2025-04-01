@@ -1,0 +1,37 @@
+<!-- base -->
+{% extends 'base.html' %}
+
+<!-- content -->
+{% block content %}
+<div class="articles">
+  {% for article in articles %}
+  <article>
+    <h2>
+      <a href="{{ article.original_url or article.article_link }}">{{ article.article_title }}</a>
+    </h2>
+    <p>Published: {{ article.article_date_published }}</p>
+    <p>Source: {{ article.article_news_source }}</p>
+    <p>Author: {{ article.article_author or 'Unknown' }}</p>
+    <p>Category: {{ article.category or 'Uncategorized' }}</p>
+    <p>Summary: {{ article.llm_generated_summary or 'No summary available' }}</p>
+  </article>
+  {% endfor %}
+</div>
+{% endblock %}
+
+<!-- pagination -->
+{% block pagination %}
+<div class="pagination">
+  {% if page > 1 %}
+  <a
+    href="{{ url_for('index', page=page-1, sort_date=sort_date, sort_title=sort_title, source=selected_sources) }}"
+    >Previous</a
+  >
+  {% endif %} {% if page < total_pages %}
+  <a
+    href="{{ url_for('index', page=page+1, sort_date=sort_date, sort_title=sort_title, source=selected_sources) }}"
+    >Next</a
+  >
+  {% endif %}
+</div>
+{% endblock %}
