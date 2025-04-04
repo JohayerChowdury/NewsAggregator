@@ -1,9 +1,22 @@
 from datetime import datetime, date
 from dateutil import parser
 from dateutil.relativedelta import relativedelta
+import pytz
 
 
-def standardize_date(date_input):
+def serialize_datetime(obj):
+    """
+    Serialize datetime object into a readable string format:
+    'Day of Week, Month of Year, Year, HH:MM (in EST)'
+    """
+    if isinstance(obj, datetime):
+        est = pytz.timezone("US/Eastern")
+        obj_est = obj.astimezone(est)
+        return obj_est.strftime("%A, %B %d, %Y, %I:%M %p (EST)")
+    raise TypeError("Type not serializable")
+
+
+def standardize_date_type_format(date_input):
     if not date_input or date_input is None:
         return None
     try:
@@ -17,19 +30,10 @@ def standardize_date(date_input):
         else:
             raise ValueError("Unsupported date format.")
 
-        return datetime(d.year, d.month, d.day)
+        return serialize_datetime(d)
     except Exception as e:
         print(f"Error formatting date: {e}")
         return date_input
-
-
-def serialize_datetime(obj):
-    """
-    Serialize datetime object into string
-    """
-    if isinstance(obj, datetime):
-        return obj.strftime("%Y-%m-%d")
-    raise TypeError("Type not serializable")
 
 
 def get_news_search_dates():

@@ -7,15 +7,15 @@
   {% for newsItem in news_items %}
   <article>
     <h2>
-      <a href="{{ newsItem.article_link or newsItem.original_url }}">
-        {{ newsItem.article_title }}
+      <a href="{{ newsItem.online_URL or newsItem.data_URL }}" target="_blank">
+        {{ newsItem.get_title() }}
       </a>
     </h2>
     <div class="article-meta">
       <div class="meta-info">
-        <p>Published: {{ newsItem.article_date_published }}</p>
-        <p>Source: {{ newsItem.article_news_source }}</p>
-        <p>Author: {{ newsItem.article_author or 'Unknown' }}</p>
+        <p>Published: {{ newsItem.get_date_published() }}</p>
+        <p>Source: {{ newsItem.get_news_source() }}</p>
+        <p>Author: {{ newsItem.extracted_author or newsItem.data_json.author or 'Unknown' }}</p>
       </div>
       <div class="toggle-display">
         <label for="toggle-{{ newsItem.id }}">
@@ -26,7 +26,7 @@
             data-id="{{ newsItem.id }}"
             {%
             if
-            newsItem.display
+            newsItem.selected_for_display
             %}checked{%
             endif
             %} />
@@ -35,8 +35,11 @@
       </div>
     </div>
     <div class="article-details">
-      <p>Category: {{ newsItem.category or 'Uncategorized' }}</p>
-      <p>Summary: {{ newsItem.llm_generated_summary or 'No summary available' }}</p>
+      <p>Category: {{ newsItem.generated_category or 'Uncategorized' }}</p>
+      <p>
+        Summary: {{ newsItem.generated_summary or newsItem.get_article_summary() or "No summary
+        available." }}
+      </p>
     </div>
   </article>
   {% endfor %}

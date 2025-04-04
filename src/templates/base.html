@@ -9,10 +9,6 @@
   <body>
     <header>
       <h1>Highline Beta's RSS Aggregator</h1>
-      <form id="searchForm" action="{{ url_for('search') }}" method="GET">
-        <input type="text" name="query" placeholder="Search For Keyword" value="{{ query }}" />
-        <button type="submit">Search</button>
-      </form>
     </header>
 
     <!-- queries -->
@@ -56,75 +52,6 @@
       Found {{ total_pages }} total pages of articles.
     </div>
 
-    <!-- filters -->
-    <div class="filters">
-      <h2>Filter:</h2>
-
-      <div class="sourcesFilter">
-        <button id="openSourcesDialog">By Source</button>
-        <dialog id="filterSourcesDialog">
-          <button id="closeSourcesDialog">Close</button>
-          <form
-            id="sourceFilterForm"
-            method="GET"
-            action="{% if query %}{{ url_for('search') }}{% else %}{{ url_for('index') }}{% endif %}">
-            <ul>
-              {% for source in sources %}
-              <li>
-                <input
-                  type="checkbox"
-                  name="source"
-                  value="{{ source }}"
-                  {%
-                  if
-                  source
-                  in
-                  selected_sources
-                  %}checked{%
-                  endif
-                  %} />
-                {{ source }}
-              </li>
-              {% endfor %}
-            </ul>
-            <button type="submit">Apply Filters</button>
-          </form>
-        </dialog>
-      </div>
-
-      <div class="googleSearchFilter">
-        <button id="openGoogleSearchDialog">By Google Search</button>
-        <dialog id="filterGoogleSearchDialog">
-          <button id="closeGoogleSearchDialog">Close</button>
-          <form
-            method="GET"
-            action="{% if query %}{{ url_for('search', query=query) }}{% else %}{{ url_for('index') }}{% endif %}">
-            >
-            <ul>
-              {% for search in google_queries %}
-              <li>
-                <input
-                  type="checkbox"
-                  name="google_search"
-                  value="{{ search }}"
-                  {%
-                  if
-                  search
-                  in
-                  selected_google_searches
-                  %}checked{%
-                  endif
-                  %} />
-                {{ search }}
-              </li>
-              {% endfor %}
-            </ul>
-            <button type="submit">Apply Filters</button>
-          </form>
-        </dialog>
-      </div>
-    </div>
-
     <!-- sorting -->
     <div class="sorting">
       <h2>Sort by:</h2>
@@ -142,7 +69,7 @@
       </div>
     </div>
 
-    <!-- what index and search_results use -->
+    <!-- what index use -->
     {% block content %}{% endblock %}
 
     <!-- pagination -->

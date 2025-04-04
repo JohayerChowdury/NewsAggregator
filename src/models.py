@@ -1,69 +1,146 @@
-from sqlalchemy import String, DateTime, Boolean, Text, UniqueConstraint
-from sqlalchemy.orm import Mapped, mapped_column
+from enum import Enum
+from pydantic import BaseModel, Field, Json as PydanticJson, ValidationError
+from typing import Optional, Any
+
+from googlenewsdecoder import GoogleDecoder
+
+# from uuid import UUID
 import json
 
-from .app import db
-from .utils import standardize_date
+from .utils import standardize_date_type_format, filter_text_content
 
 
-class NewsItem(db.Model):
+class NewsItemCategory(str, Enum):
+    """Enum for news item categories."""
+
+    GOVERNMENT = "government"
+    COMPANY = "company"
+    COMMUNITY = "community"
+    OTHER = "other"
+
+
+class NewsItemSchema(BaseModel):
     __tablename__ = "news_items"
-    __table_args__ = (UniqueConstraint("article_link", name="uq_article_link"),)
 
     ## required fields
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    data_source: Mapped[str] = mapped_column(
-        String, nullable=False
-    )  # Source of the article (e.g., RSS feed, Google News)
-    data_json: Mapped[str] = mapped_column(
-        String, nullable=False
-    )  # JSON data from crawled article
-    article_link: Mapped[str] = mapped_column(
-        String, nullable=False, unique=True
-    )  # URL of the article
-    category: Mapped[str | None] = mapped_column(String, nullable=False)
-    llm_generated_summary: Mapped[str | None] = mapped_column(Text, nullable=False)
+    id: Optional[int] = Field(
+        None, primary_key=True, description="Unique identifier for the news item"
+    )
+    data_source_type: str = Field(
+        ..., description="Type of data source (e.g., RSS Feed)"
+    )
+    # CAN DELETE: data_json_old: PydanticJson[Any] = Field()
+    data_json: dict = Field(
+        ..., unique=True, description="JSON data from crawled article"
+    )
+    data_URL: str = Field(..., unique=True, description="URL of the article")
+    selected_for_display: bool = Field(
+        default=False, description="Selected for display"
+    )
+    generated_category: Optional[str] = Field(None, description="Generated category")
+    generated_summary: Optional[str] = Field(None, description="Generated summary")
 
-    ## extracted fields
-    article_date_published: Mapped[DateTime] = mapped_column(DateTime, nullable=False)
-    article_title: Mapped[str] = mapped_column(String, nullable=False)
-    article_news_source: Mapped[str] = mapped_column(String, nullable=False)
-    article_author: Mapped[str | None] = mapped_column(String, nullable=True)
-    article_text: Mapped[str | None] = mapped_column(Text, nullable=True)
-    article_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # extracted/derived fields
+    extracted_date_published: Optional[str] = Field(None, description="Date published")
+    extracted_title: Optional[str] = Field(None, description="Title of the article")
+    extracted_news_source: Optional[str] = Field(None, description="News source")
+    extracted_author: Optional[str] = Field(None, description="Author of the article")
+    extracted_text: Optional[str] = Field(None, description="Full text of the article")
+    extracted_summary: Optional[str] = Field(None, description="Extracted summary")
 
-    ## generated fields
-    original_url: Mapped[str | None] = mapped_column(String, nullable=True)
-    selected_for_display: Mapped[bool] = mapped_column(Boolean, default=False)
+    def get_online_url(self):
+        """
+        Retrieve the article URL. If data_URL is null/empty,
+        fallback to data_json.link (if it exists).
+        """
 
-    def __repr__(self):
-        return f"<Article {self.article_title}>"
+        # TODO: Decode Google News URL if necessary
+        if self.data_URL:
+            return self.data_URL
 
-    def __init__(self, data_source, data, article_link, **kwargs):
-        self.data_source = data_source
-        self.data_json = json.dumps(data)
-        self.article_link = article_link
-
-        self.article_date_published = standardize_date(data["published"])
-        self.article_title = data["title"]
-
+        # Attempt to retrieve link from data_json
         try:
-            self.article_news_source = data["source"]["title"]
-        except KeyError:
-            self.article_news_source = data_source
+            link = self.data_json.get("link")
+            if link:
+                return link
+        except AttributeError:
+            # Handle cases where data_json is not a dictionary or lacks the expected structure
+            pass
 
+        return None
+
+    def get_news_source(self):
+        """
+        Retrieve the news source. If extracted_news_source is null/empty,
+        fallback to data_json.source.title (if it exists).
+        """
+        if self.extracted_news_source:
+            return self.extracted_news_source
+
+        # Attempt to retrieve source title from data_json
         try:
-            self.article_author = data["author"]
-        except KeyError:
-            self.article_author = None
+            source_title = self.data_json.get("source", {}).get("title")
+            if source_title:
+                return source_title
+        except AttributeError:
+            # Handle cases where data_json is not a dictionary or lacks the expected structure
+            pass
 
+        return None
+
+    def get_title(self):
+        """
+        Retrieve the title. If extracted_title is null/empty,
+        fallback to data_json.title (if it exists).
+        """
+        if self.extracted_title:
+            return self.extracted_title
+
+        # Attempt to retrieve title from data_json
         try:
-            self.original_url = data["link"]
-        except KeyError:
-            self.original_url = None
+            title = self.data_json.get("title")
+            if title:
+                return title
+        except AttributeError:
+            # Handle cases where data_json is not a dictionary or lacks the expected structure
+            pass
 
-        self.selected_for_display = kwargs.get("selected_for_display", False)
+        return None
 
-    @property
-    def article_data(self):
-        return json.loads(self.data_json)
+    def get_date_published(self):
+        """
+        Retrieve the date published. If extracted_date_published is null/empty,
+        fallback to data_json.published (if it exists).
+        """
+        if self.extracted_date_published:
+            return standardize_date_type_format(self.extracted_date_published)
+
+        # Attempt to retrieve published date from data_json
+        try:
+            published_date = self.data_json.get("published")
+            if published_date:
+                return standardize_date_type_format(published_date)
+        except AttributeError:
+            # Handle cases where data_json is not a dictionary or lacks the expected structure
+            pass
+
+        return None
+
+    def get_article_summary(self):
+        """
+        Retrieve the article summary. If extracted_summary is null/empty,
+        fallback to data_json.summary (if it exists).
+        """
+        if self.extracted_summary:
+            return self.extracted_summary
+
+        # Attempt to retrieve summary from data_json
+        try:
+            summary = self.data_json.get("summary")
+            if summary:
+                return filter_text_content(summary)
+        except AttributeError:
+            # Handle cases where data_json is not a dictionary or lacks the expected structure
+            pass
+
+        return None

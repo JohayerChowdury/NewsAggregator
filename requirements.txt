@@ -17,26 +17,30 @@ crawl4ai
 
 ## Text & URL Parsing
 feedparser
-urllib3
+# urllib3
 # lxml
 # html5lib # https://stackoverflow.com/a/73403774
 
 ## Data Analysis
-pandas
-numpy
+# pandas
 
 ## Database
 flask-sqlalchemy
-flask-migrate
+psycopg2
+supabase
 
 ## Machine Learning
 openai
 llama-index
 llama-index-core
+# llama_index.vector_stores
+# llama_index.indices
+# vecs
+
 # langchain
 # langchain-core
 # langchain-community
 
 ## Vector DB
-chromadb
+# chromadb
 # faiss-cpu

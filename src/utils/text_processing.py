@@ -47,7 +47,10 @@ def filter_text_content(text):
     text = re.sub(r"http\S+", "", text)  # Remove URLs
     text = re.sub(r"\s+", " ", text).strip()  # Normalize whitespace
 
-    # Remove HTML/XML tags and URLs
+    # Replace non-breaking spaces (&nbsp;) with regular spaces
+    text = text.replace("&nbsp;", " ")
+
+    # Remove social media mentions and URLs
     text = remove_websites_and_social_media_mentions(text)
 
     # Remove dates in this format Jan 22, 2025

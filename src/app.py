@@ -2,44 +2,38 @@ import os
 from dotenv import load_dotenv
 
 from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy.orm import DeclarativeBase
-from flask_migrate import Migrate
 
 from .config.config import Config
+from .services.database_service import SupabaseDBService
+from .scrapers.crawl4ai_scraper import Crawl4AIScraper
 
+# Supabase service instance
+database_service: SupabaseDBService = None
 
-class Base(DeclarativeBase):
-    pass
-
-
-# sql achemy instance
-db = SQLAlchemy(model_class=Base)
+# Crawl4AI scraper instance
+scraper: Crawl4AIScraper = None
 
 # calling dev config
 config = Config().dev_config
-
-SQLALCHEMY_DATABASE_URI = (
-    os.environ.get("DATABASE_URI") or "sqlite:///./news-aggregator-db.db"
-)
 
 
 def create_app():
     app = Flask(__name__)
     app.env = config.ENV
-    app.config["SQLALCHEMY_DATABASE_URI"] = SQLALCHEMY_DATABASE_URI
-    app.config["SQLACHEMY_TRACK_MODIFICATIONS"] = os.environ.get(
-        "SQLACHEMY_TRACK_MODIFICATIONS", False
-    )
     app.secret_key = os.environ.get("SECRET_KEY")
 
-    db.init_app(app)
+    # Initialize Supabase service
+    global database_service
+    database_service = SupabaseDBService(
+        os.environ.get("SUPABASE_URL"), os.environ.get("SUPABASE_KEY")
+    )
+
+    # Initialize Crawl4AI scraper
+    global scraper
+    scraper = Crawl4AIScraper()
 
     from .routes import register_routes
 
-    register_routes(app, db)
-
-    # Flask Migrate instance to handle migrations
-    migrate = Migrate(app, db)
+    register_routes(app)
 
     return app
