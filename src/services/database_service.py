@@ -290,7 +290,3 @@ class SupabaseDBService:
         except Exception as e:
             print(f"Error updating generated_category: {e}")
             return None
-
-
-class SQLAlchemyDBService:
-    pass

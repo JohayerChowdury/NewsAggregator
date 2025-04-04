@@ -31,7 +31,7 @@ class NewsItemSchema(BaseModel):
     )
     # CAN DELETE: data_json_old: PydanticJson[Any] = Field()
     data_json: dict = Field(
-        ..., unique=True, description="JSON data from crawled article"
+        ..., unique=True, description="JSON data of crawled article"
     )
     data_URL: str = Field(..., unique=True, description="URL of the article")
     selected_for_display: bool = Field(

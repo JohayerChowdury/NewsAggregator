@@ -2,52 +2,12 @@
 # import numpy as np
 # import json
 
-# from .utils.webflow_client import update_collection
 # from .scrapers.beautifulsoup_scraper import check_for_required_columns
 
 # # source: https://www.perplexity.ai/search/we-want-to-track-all-news-rela-fkvIqwT2Tum_rBEBC8b4zg#8
 
 # gpt_model = os.environ.get("LLM_MODEL")
 # print(f"Using GPT model: {gpt_model}")
-
-
-# def prepare_embeddings_array(df, column="extracted_content", embedding_dim=384):
-#     """
-#     Generates embeddings for a dataframe column and returns a properly shaped NumPy array.
-
-#     Parameters:
-#     - df (pd.DataFrame): The DataFrame containing the text to be embedded.
-#     - column (str): The column name containing text to be embedded.
-#     - embedding_dim (int): The expected dimension of each embedding.
-
-#     Returns:
-#     - np.ndarray: A 2D array of shape (N, embedding_dim) suitable for FAISS indexing.
-#     """
-
-#     try:
-#         # Generate embeddings
-
-#         # Handle missing, empty, or malformed embeddings
-#         df = df.dropna(subset=["vectors"])
-
-#         # Convert to a NumPy array
-#         embeddings_array = np.array(df["vectors"].tolist(), dtype=np.float32)
-
-#         # Check shape to confirm it's valid for FAISS
-#         if embeddings_array.shape[1] != embedding_dim:
-#             raise ValueError(
-#                 f"Embedding dimension mismatch. Expected {embedding_dim}, got {embeddings_array.shape[1]}."
-#             )
-
-#         return df, embeddings_array
-
-#     except Exception as e:
-#         print(f"Error preparing embeddings: {e}")
-#         return None
-
-
-# def analyze_themes(df, num_themes=20): ...
-
 
 # def generate_theme_label(cluster_texts):
 #     prompt = f"'''{' '.join(cluster_texts[:3])}''' Question: What is the connecting theme among these articles in 5 words or less?"
@@ -83,23 +43,6 @@
 #         print(f"Error generating theme label:")
 #         print(e)
 #         return "Unlabeled Theme"
-
-
-# def label_themes(df):
-#     try:
-#         theme_labels = {}
-#         for cluster_id in df["theme_cluster"].unique():
-#             cluster_texts = df[df["theme_cluster"] == cluster_id][
-#                 "extracted_content"
-#             ].tolist()
-#             theme_labels[cluster_id] = generate_theme_label(cluster_texts)
-#         df["theme_name"] = df["theme_cluster"].map(theme_labels)
-#     except Exception as e:
-#         print("Error labeling themes:")
-#         print(e)
-#         df["theme_name"] = "Unlabeled Theme"
-
-#     return df
 
 
 # def generate_summary(theme_name, articles):
