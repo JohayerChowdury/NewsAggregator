@@ -4,8 +4,15 @@ from dotenv import load_dotenv
 from flask import Flask
 
 from .config.config import Config
+
+from .services.openai_service import OpenAIService
 from .services.database_service import SupabaseDBService
-from .scrapers.crawl4ai_scraper import Crawl4AIScraper
+from .services.scrapers.crawl4ai_scraper import Crawl4AIScraper
+
+load_dotenv()  # Load environment variables from .env file
+
+# OpenAI service
+openai_service: OpenAIService = None
 
 # Supabase service instance
 database_service: SupabaseDBService = None
@@ -32,8 +39,14 @@ def create_app():
     global scraper
     scraper = Crawl4AIScraper()
 
-    from .routes import register_routes
+    # Initialize OpenAI service
+    global openai_service
+    openai_service = OpenAIService()
 
-    register_routes(app)
+    # Register blueprints
+    from .routes import client_routes, api_routes
+
+    app.register_blueprint(client_routes)
+    app.register_blueprint(api_routes)
 
     return app

@@ -1,7 +1,7 @@
 from requests_cache import CachedSession
 from bs4 import BeautifulSoup
 
-from ..utils.text_processing import filter_text_content
+from ...utils.text_processing import filter_text_content
 
 # PROXY_ADDRESSES = {
 #     "http": "http://72.206.181.123:4145",

@@ -1,5 +1,0 @@
-## Deployment
-gunicorn
-
-## Miscellaneous
-ipykernel

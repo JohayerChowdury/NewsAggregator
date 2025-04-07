@@ -1,22 +1,18 @@
 import aiohttp
 import asyncio
 import feedparser
-from feedparser import FeedParserDict
 import ssl
-import json
 
-from ..models import NewsItemSchema, ValidationError, PydanticJson
+from ...models import NewsItemSchema, ValidationError
 
-# This object is for seeing which RSS feeds are working and which are not
-RSS_FEEDS_JSON = {
+# NOTE: Add RSS feeds and their sources here for crawling {source: feed_url}
+RSS_FEEDS = {
     "Canadian Mortgage Trends": "https://www.canadianmortgagetrends.com/feed/",  # works
     # "Government of Canada: Finance": "https://api.io.canada.ca/io-server/gc/news/en/v2?dept=departmentfinance&type=newsreleases&sort=publishedDate&orderBy=desc&publishedDate%3E=2020-08-09&pick=100&format=atom&atomtitle=Canada%20News%20Centre%20-%20Department%20of%20Finance%20Canada%20-%20News%20Releases",  # doesnt work,
     # TODO: look into podcasts and how to parse them
     # "Podcast: The Hidden Upside: Real Estate": "https://feeds.libsyn.com/433605/rss",
     # "Podcast: The Real Estate REplay": "https://feeds.buzzsprout.com/1962859.rss",  # doesnt work (for now)
 }
-
-RSS_FEEDS = ["https://www.canadianmortgagetrends.com/feed/"]
 
 # Create an SSL context to ignore verification
 ssl_context = ssl.create_default_context()
@@ -70,23 +66,28 @@ async def retrieve_articles_from_rss_feeds() -> list[NewsItemSchema]:
     Retrieve articles from all RSS feeds concurrently.
     """
     tasks = []
-    for feed_url in RSS_FEEDS:
+    for source, feed_url in RSS_FEEDS.items():
         tasks.append(extract_articles_from_feed(feed_url))
 
     results = await asyncio.gather(*tasks)
 
-    news_items = [NewsItemSchema]
-    for feed_url, articles_from_feed in zip(RSS_FEEDS, results):
+    news_items = []
+    for source, articles_from_feed in zip(RSS_FEEDS.keys(), results):
         for entry in articles_from_feed:
             try:
-                entry_str = json.dumps(entry)
+                # entry_str = json.dumps(entry)
 
                 # Validate the news item against the NewsItemBase model
                 news_item = NewsItemSchema(
                     data_source_type="Specific RSS Feed",
-                    data_json=entry_str,
-                    # data_json=entry,
+                    # data_json=entry_str,
+                    data_json=entry,
                     data_URL=entry["link"],
+                    extracted_title=entry.get("title"),
+                    extracted_news_source=source,
+                    extracted_date_published=entry.get("published"),
+                    extracted_author=entry.get("author"),
+                    extracted_summary=entry.get("summary"),
                 )
                 news_items.append(news_item)
             except ValidationError as e:

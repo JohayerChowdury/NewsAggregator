@@ -106,3 +106,16 @@ def normalize_html_content(raw_html):
     text = filter_text_content(text)
 
     return text
+
+
+from googlenewsdecoder import gnewsdecoder
+
+
+def decode_gnews_url(url):
+    try:
+        decoded = gnewsdecoder(url)
+        if decoded.get("status"):
+            return decoded["decoded_url"]
+    except Exception as e:
+        print(f"Error decoding URL {url}: {e}")
+    return url

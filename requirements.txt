@@ -1,5 +1,6 @@
 ## General
 python-dotenv
+openai
 
 ## Web server
 flask
@@ -25,22 +26,11 @@ feedparser
 # pandas
 
 ## Database
-flask-sqlalchemy
 psycopg2
 supabase
 
-## Machine Learning
-openai
-llama-index
-llama-index-core
-# llama_index.vector_stores
-# llama_index.indices
-# vecs
+## Deployment
+gunicorn
 
-# langchain
-# langchain-core
-# langchain-community
-
-## Vector DB
-# chromadb
-# faiss-cpu
+## Miscellaneous
+ipykernel
