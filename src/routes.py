@@ -33,13 +33,26 @@ def auth_required(f):
     return decorated_function
 
 
-# Client-side routes
 @client_routes.route("/", methods=["GET"])
 def index():
+    return render_template("index.html")
+
+
+@client_routes.route("/crawl-for-news", methods=["GET"])
+def crawl_for_news():
+    return render_template("crawl_for_news.html")
+
+
+@client_routes.route("/news-items", methods=["GET"])
+def display_news_items():
     page = request.args.get("page", 1, type=int)
     per_page = 20
 
-    db_query = database_service.query_select_news_items_from_db()
+    db_query = database_service.query_select_news_items_from_db(
+        filters={
+            "is_removed_from_display": False,
+        }
+    )
     db_query_response = db_query.execute()
 
     total_count = 0
@@ -51,6 +64,7 @@ def index():
         page=page,
         per_page=per_page,
     )
+    paginated_news_items = []
     paginated_query_response = paginated_query.execute()
     if paginated_query_response.data:
         paginated_news_items = [
@@ -60,14 +74,13 @@ def index():
     total_pages = (total_count + per_page - 1) // per_page
 
     return render_template(
-        "index.html",
+        "news_items/index.html",
         news_items=paginated_news_items,
         page=page,
         total_pages=total_pages,
     )
 
 
-# API routes
 @api_routes.route("/crawl-sources-and-insert-into-database", methods=["POST"])
 async def crawl_sources_and_insert_into_database():
     """
@@ -79,13 +92,62 @@ async def crawl_sources_and_insert_into_database():
         for item in news_items:
             print(f"Database Insert: Attempting NewsItem with URL: {item.data_URL}")
             response = database_service.insert_news_item(item)
-            if response:
-                print(
-                    f"Database Insert Success: Created with ID {NewsItemSchema(**response).id}"
-                )
+            if response.is_success():
+                print(f"Database Insert Success: Created with ID {response.data.id}")
             else:
-                print(f"Database Insert Failed")
-    return news_items
+                print(f"Database Insert Failed: {response.message}")
+    return 200
+
+
+# @api_routes.route("/crawl-sources-and-save-to-file", methods=["POST"])
+# async def crawl_sources_and_save_to_file():
+#     """
+#     Endpoint to crawl articles from all sources and save them to a CSV file.
+#     """
+#     news_items = await CrawlerService.crawl_all_sources()
+#     if len(news_items) > 0:
+#         print(f"Crawled {len(news_items)} articles from all sources")
+#         with open("news_items.csv", "w") as file:
+#             for item in news_items:
+#                 file.write(f"{item.extracted_title},{item.extracted_URL}\n")
+#     return 200
+
+
+# @api_routes.route("/assign-category/<article_id>", methods=["POST"])
+# def assign_category(article_id: int):
+#     """
+#     Endpoint to assign a category to an article by its ID.
+#     """
+#     try:
+#         db_query = database_service.query_select_news_items_from_db(
+#             filters={"id": article_id},
+#             not_null_fields=["article_text"],
+#         )
+#         db_query_response = db_query.execute()
+
+#         news_items = []
+#         if db_query_response.data:
+#             news_items = [NewsItemSchema(**item) for item in db_query_response.data]
+
+#         if len(news_items) > 0:
+#             item = news_items[0]
+#             if item.article_text:
+#                 categories = [
+#                     "Government Updates regarding Legal & Financing Implications",
+#                     "Company Updates regarding Products & Programs Offered",
+#                     "Locality Updates regarding Construction & Community Considerations",
+#                     "Other Updates regarding Middle Housing Financing in Canada",
+#                 ]
+#                 generated_category = openai_service.assign_category(
+#                     item.article_text, categories
+#                 )
+#                 item.generated_category = generated_category
+#                 database_service.update_news_item(item.id, item)
+#                 return jsonify(item), 200
+
+#         return jsonify({"error": "Article not found or no text available."}), 404
+#     except Exception as e:
+#         return jsonify({"error": f"An error occurred: {str(e)}"}), 500
 
 
 @api_routes.route("/assign-categories", methods=["POST"])
@@ -149,17 +211,27 @@ def generate_summaries():
     return jsonify(inserted_items)
 
 
-@api_routes.route("/delete_article/<int:article_id>", methods=["DELETE"])
-def delete_article(article_id):
+@api_routes.route("/remove_article/<int:article_id>", methods=["POST"])
+def remove_article(article_id: int):
     """
-    Endpoint to delete an article by its ID.
+    Endpoint to remove an article from display by its ID.
     """
     try:
-        response = database_service.delete_news_item(article_id)
+        response = database_service.update_news_item_removed_from_display(
+            article_id, True
+        )
         if response:
-            return jsonify({"message": "Article deleted successfully."}), 200
+            return (
+                jsonify({"message": "Article removed from display successfully."}),
+                200,
+            )
         else:
-            return jsonify({"error": "Article not found or could not be deleted."}), 404
+            return (
+                jsonify(
+                    {"error": "Article not found or could not be removed from display."}
+                ),
+                404,
+            )
     except Exception as e:
         return jsonify({"error": f"An error occurred: {str(e)}"}), 500
 

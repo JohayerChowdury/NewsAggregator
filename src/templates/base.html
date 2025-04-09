@@ -3,6 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <title>Canadian Housing + Financing News Hub</title>
+    <!-- Custom CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
     <script src="{{ url_for('static', filename='scripts.js') }}" defer></script>
   </head>
@@ -10,52 +11,6 @@
     <header>
       <h1>News Aggregator</h1>
     </header>
-
-    <!-- queries -->
-    <div class="queries">
-      <div id="queriesDescription">
-        <button id="openQueriesDescriptionDialog">Searching the following feeds...</button>
-        <dialog id="queriesDescriptionDialog">
-          <button id="closeQueriesDescriptionDialog">Close</button>
-          <div id="description">
-            <h3>Searching the following:</h3>
-            <div class="google-news">
-              <h4>from Google News:</h4>
-              <ul>
-                {% for query in google_queries %}
-                <li>{{ query }}</li>
-                {% endfor %}
-              </ul>
-            </div>
-            <div class="websites">
-              <h4>from these websites:</h4>
-              <!-- <ul>
-                {% for query in queries %}
-                <li>{{ query }}</li>
-                {% endfor %}
-              </ul> -->
-            </div>
-            <div class="rss-feeds">
-              <h4>from these RSS feeds:</h4>
-              <ul>
-                {% for feed in rss_feeds %}
-                <li>{{ feed }}</li>
-                {% endfor %}
-              </ul>
-            </div>
-          </div>
-        </dialog>
-      </div>
-    </div>
-
-    <div id="totalNumberOfPagesOfArticlesFound">
-      Found {{ total_pages }} total pages of articles.
-    </div>
-
-    <!-- what index use -->
     {% block content %}{% endblock %}
-
-    <!-- pagination -->
-    {% block pagination %}{% endblock %}
   </body>
 </html>

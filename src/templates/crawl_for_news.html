@@ -1,0 +1,30 @@
+<!-- base -->
+{% extends 'base.html' %}
+<!-- content -->
+
+{% block content %}
+<div class="container">
+  <h1>Crawl for New Articles</h1>
+  <p>Click the button below to start crawling for new articles.</p>
+  <button id="crawl-button" class="btn btn-primary">Crawl for New Articles</button>
+  <p id="crawl-status"></p>
+</div>
+<script>
+  const crawlNewsButton = document.getElementById("crawl-button");
+  const statusElement = document.getElementById("crawl-status");
+
+  crawlNewsButton.addEventListener("click", async function () {
+    statusElement.innerText = "Crawling for new articles...";
+    const response = await fetch(
+      "{{ url_for('api_routes.crawl_sources_and_insert_into_database') }}",
+      {
+        method: "POST",
+      }
+    );
+
+    if (response.ok) {
+      statusElement.innerHTML = `Crawling completed. <a href="{{ url_for('client_routes.display_news_items') }}">View the new articles added.</a>`;
+    }
+  });
+</script>
+{% endblock %}

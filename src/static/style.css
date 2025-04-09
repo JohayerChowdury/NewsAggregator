@@ -39,33 +39,6 @@ header h1 {
   font-size: 2em;
 }
 
-header form {
-  margin-top: 10px;
-}
-
-header input[type="text"] {
-  padding: 10px;
-  font-size: 1em;
-  width: 60%;
-  max-width: 400px;
-  border: none;
-  border-radius: 4px;
-}
-
-header button {
-  padding: 10px 15px;
-  font-size: 1em;
-  background-color: #007bff;
-  color: #fff;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-header button:hover {
-  background-color: #0056b3;
-}
-
 .articles {
   margin: 20px auto;
   padding: 0 20px;
@@ -115,12 +88,12 @@ article p {
   margin-top: 10px;
 }
 
-.pagination {
+.container {
   text-align: center;
   margin: 20px 0;
 }
 
-.pagination a {
+.container a {
   padding: 10px 20px;
   margin: 0 5px;
   background-color: #007bff;
@@ -130,35 +103,17 @@ article p {
   display: inline-block;
 }
 
-.pagination a:hover {
+.container a:hover {
   background-color: #0056b3;
 }
 
-.pagination a:disabled,
-.pagination a.disabled {
+.container a.disabled {
   background-color: #ddd;
   color: #666;
   pointer-events: none;
 }
 
-.queries {
-  margin: 20px auto;
-  padding: 0 20px;
-  max-width: 800px;
-}
-
-.queries div {
-  margin: 20px 0;
-}
-
-.filters {
-  margin: 20px auto;
-  padding: 20px 20px;
-  max-width: 800px;
-  border: 1px solid #ddd;
-}
-
-.filters div {
+.container div {
   display: inline-block;
   margin-right: 20px;
 }
@@ -171,11 +126,16 @@ button {
   border-radius: 4px;
   cursor: pointer;
   transition: background-color 0.3s ease;
+  background-color: #007bff;
+  color: #fff;
+}
+
+button:hover {
+  background-color: #0056b3;
 }
 
 button.delete-btn {
   background-color: #dc3545;
-  color: #fff;
 }
 
 button.delete-btn:hover {

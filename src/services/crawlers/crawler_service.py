@@ -12,6 +12,7 @@ class CrawlerService:
 
         # Crawl RSS feeds
         try:
+            print("Crawling RSS feeds...")
             crawled_articles_from_rss = await rss_feed_crawl.main()
             news_items.extend(crawled_articles_from_rss)
         except Exception as e:
@@ -19,6 +20,7 @@ class CrawlerService:
 
         # Crawl Google News
         try:
+            print("Crawling Google News...")
             crawled_articles_from_google = await google_news_crawl.main()
             news_items.extend(crawled_articles_from_google)
         except Exception as e:

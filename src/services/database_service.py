@@ -1,10 +1,40 @@
 from supabase import create_client, Client, PostgrestAPIResponse
 from postgrest import SyncSelectRequestBuilder
 from typing import List, Optional
+from enum import Enum
 
 # from googlenewsdecoder import GoogleDecoder
 
 from ..models import NewsItemSchema
+
+
+class DatabaseResponseStatusType(Enum):
+    """
+    Enum for database operation status types.
+    """
+
+    SUCCESS = "success"
+    FAILURE = "failure"
+    ERROR = "error"
+
+
+class DatabaseResponse:
+    """
+    Standardized response object for database operations.
+    """
+
+    def __init__(
+        self,
+        status: DatabaseResponseStatusType,
+        data: Optional[dict] = None,
+        message: Optional[str] = None,
+    ):
+        self.status = status
+        self.data = data
+        self.message = message
+
+    def is_success(self) -> bool:
+        return self.status == DatabaseResponseStatusType.SUCCESS
 
 
 class SupabaseDBService:
@@ -83,7 +113,7 @@ class SupabaseDBService:
         return list(set(item["extracted_news_source"] for item in response.data))
 
     # CREATE METHODS
-    def insert_news_item(self, news_item: NewsItemSchema) -> Optional[dict]:
+    def insert_news_item(self, news_item: NewsItemSchema) -> DatabaseResponse:
         """
         Insert a news item into the database.
         """
@@ -97,11 +127,22 @@ class SupabaseDBService:
                 .execute()
             )
 
-            return response.data[0] if response.data else None
+            if response.data:
+                return DatabaseResponse(
+                    status=DatabaseResponseStatusType.SUCCESS,
+                    data=NewsItemSchema(**response.data[0]),
+                )
+            else:
+                return DatabaseResponse(
+                    status=DatabaseResponseStatusType.FAILURE,
+                    message="No data inserted in the database.",
+                )
 
         except Exception as e:
-            print(f"Error inserting in database: {e}")
-            return None
+            return DatabaseResponse(
+                status=DatabaseResponseStatusType.ERROR,
+                message=f"Error inserting in database: {e}",
+            )
 
     # UPDATE METHODS
     def update_news_item(self, id, news_item: NewsItemSchema) -> Optional[dict]:
@@ -123,6 +164,42 @@ class SupabaseDBService:
 
         except Exception as e:
             print(f"Error updating news item: {e}")
+            return None
+
+    def update_news_item_removed_from_display(
+        self, id: int, is_removed_from_display: bool
+    ) -> Optional[dict]:
+        """
+        Update the is_removed_from_display field in the database.
+        """
+        try:
+            response: PostgrestAPIResponse = (
+                self.supabase_client.table(self.NEWS_ITEMS_TABLE)
+                .update({"is_removed_from_display": is_removed_from_display})
+                .eq("id", id)
+                .execute()
+            )
+            return response.data[0] if response.data else None
+        except Exception as e:
+            print(f"Error updating is_removed_from_display: {e}")
+            return None
+
+    def update_news_item_extracted_url(
+        self, id: int, extracted_url: str
+    ) -> Optional[dict]:
+        """
+        Update the extracted_URL field in the database.
+        """
+        try:
+            response: PostgrestAPIResponse = (
+                self.supabase_client.table(self.NEWS_ITEMS_TABLE)
+                .update({"extracted_URL": extracted_url})
+                .eq("id", id)
+                .execute()
+            )
+            return response.data[0] if response.data else None
+        except Exception as e:
+            print(f"Error updating extracted_URL: {e}")
             return None
 
     # def update_extracted_date_published(

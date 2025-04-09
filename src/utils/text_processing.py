@@ -106,9 +106,14 @@ def normalize_html_content(raw_html):
 from googlenewsdecoder import gnewsdecoder
 
 
-def decode_gnews_url(url):
+def decode_gnews_url(url, interval=None, proxy=True):
     try:
-        decoded = gnewsdecoder(url)
+        decoded = None
+        if proxy:
+            proxyString = "http://15.235.53.20:28003"  # Use different proxy if needed
+            decoded = gnewsdecoder(source_url=url, interval=interval, proxy=proxyString)
+        else:
+            decoded = gnewsdecoder(source_url=url, interval=interval)
         if decoded.get("status"):
             return decoded["decoded_url"]
     except Exception as e:

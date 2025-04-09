@@ -1,14 +1,14 @@
-from enum import Enum
 from pydantic import BaseModel, Field, ValidationError
 from typing import Optional
 
+# from datetime import datetime
+# from enum import Enum
 # from uuid import UUID
 # import json
 
 from .utils import (
     standardize_date_type_format,
     clean_and_normalize_text,
-    decode_gnews_url,
 )
 
 
@@ -40,10 +40,12 @@ class NewsItemSchema(BaseModel):
         ..., unique=True, description="JSON data of crawled article"
     )
     data_URL: str = Field(..., unique=True, description="URL of the article")
-    selected_for_display: bool = Field(
-        default=False, description="Selected for display"
+    is_selected_for_download: bool = Field(
+        default=False, description="Selected for download"
     )
-    # TODO: add a field for deleted articles
+    is_removed_from_display: bool = Field(
+        default=False, description="Removed from display"
+    )
 
     # extracted/derived fields
     extracted_URL: Optional[str] = Field(None, description="Extracted URL")
@@ -58,17 +60,12 @@ class NewsItemSchema(BaseModel):
     generated_category: Optional[str] = Field(None, description="AI-Generated category")
     generated_summary: Optional[str] = Field(None, description="AI-Generated summary")
 
-    def get_online_url(self, decode_gnews: bool = False) -> str:
+    def get_online_url(self) -> str:
         """
         Retrieve the article URL.
         """
         if self.extracted_URL:
             return self.extracted_URL
-
-        if decode_gnews:
-            decoded_url = decode_gnews_url(self.data_URL)
-            return decoded_url
-
         return self.data_URL
 
     def get_date_published(self):
@@ -127,8 +124,7 @@ class NewsItemSchema(BaseModel):
 
     def get_article_summary(self):
         """
-        Retrieve the article summary. If extracted_summary is null/empty,
-        fallback to data_json.summary (if it exists).
+        Retrieve the article summary.
         """
         if self.extracted_summary:
             return clean_and_normalize_text(self.extracted_summary)
@@ -156,12 +152,14 @@ class NewsItemSchema(BaseModel):
         """
         relevant_information = ""
         if self.extracted_title:
-            relevant_information += f"Title: {self.extracted_title}\n"
+            relevant_information += f"Title: {self.get_title()}\n"
 
         if self.extracted_news_source:
-            relevant_information += f"News Source: {self.extracted_news_source}\n"
+            relevant_information += f"News Source: {self.get_news_source()}\n"
 
         relevant_information += f"Summary: {self.get_article_summary()}\n"
+
+        return relevant_information
 
     def get_category(self):
         if self.generated_category:
