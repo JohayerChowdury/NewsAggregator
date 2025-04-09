@@ -10,24 +10,13 @@ GOOGLE_NEWS_SEARCH_QUERIES = [
     # "Canadian accessory dwelling unit",  # NOTE: looks like adding "Canadian" doesn't work well
     # "Canadian mortgage regulations",
     "zoning laws in Toronto, Ontario",
-    # "accessory dwelling unit",
-    # "mortgage regulations",
-    # # TODO: look into how these queries are being used
-    # "purchase financing",
-    # "renovation financing",
-    # "construction financing",
-    # "private financing",
-    # "mortgage financing",
-    # "home equity financing",
-    # "refinancing mortgage",
-    # "multiplex conversion",
-    # "multiplex renovation",
-    # "multiplex financing",
-    # "multiplex construction",
-    # "multiplex purchase",
-    # "multiplex refinance",
-    # "middle housing",
-    # "corporate programs tied to housing",
+    "accessory dwelling unit",
+    "mortgage regulations",
+    "multiplex conversion",
+    "multiplex financing",
+    "middle housing",
+    "corporate programs tied to housing",
+    "government regulations on housing",
 ]
 
 # Initialize GoogleNews with Canadian settings
@@ -75,6 +64,7 @@ async def retrieve_articles_from_google_news(
                     extracted_title=entry.get("title"),
                     extracted_news_source=entry.get("source", {}).get("title"),
                     extracted_date_published=entry.get("published"),
+                    extracted_summary=entry.get("summary"),
                 )
 
                 if decode_gnews:
@@ -82,6 +72,10 @@ async def retrieve_articles_from_google_news(
                     news_item.extracted_URL = decoded_url
 
                 news_items.append(news_item)
+                # print(
+                #     "News item crawled from Google News RSS Feed:",
+                #     news_item.extracted_title,
+                # )
             except ValidationError as e:
                 print(
                     f"Validation error for entry from {entry.get('title', 'Unknown Title')}: {e}"
@@ -91,7 +85,7 @@ async def retrieve_articles_from_google_news(
     return news_items
 
 
-async def main() -> list:
+async def main() -> list[NewsItemSchema]:
     articles = await retrieve_articles_from_google_news()
     return articles
 

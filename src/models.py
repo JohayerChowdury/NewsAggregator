@@ -5,7 +5,11 @@ from typing import Optional
 # from uuid import UUID
 # import json
 
-from .utils import standardize_date_type_format, filter_text_content, decode_gnews_url
+from .utils import (
+    standardize_date_type_format,
+    clean_and_normalize_text,
+    decode_gnews_url,
+)
 
 
 # class NewsItemCategory(str, Enum):
@@ -39,6 +43,7 @@ class NewsItemSchema(BaseModel):
     selected_for_display: bool = Field(
         default=False, description="Selected for display"
     )
+    # TODO: add a field for deleted articles
 
     # extracted/derived fields
     extracted_URL: Optional[str] = Field(None, description="Extracted URL")
@@ -126,15 +131,15 @@ class NewsItemSchema(BaseModel):
         fallback to data_json.summary (if it exists).
         """
         if self.extracted_summary:
-            return filter_text_content(self.extracted_summary)
+            return clean_and_normalize_text(self.extracted_summary)
 
         if self.generated_summary:
-            return filter_text_content(self.generated_summary)
+            return clean_and_normalize_text(self.generated_summary)
 
         try:
             summary = self.data_json.get("summary")
             if summary:
-                return filter_text_content(summary)
+                return clean_and_normalize_text(summary)
         except AttributeError:
             # Handle cases where data_json is not a dictionary or lacks the expected structure
             pass
@@ -143,7 +148,20 @@ class NewsItemSchema(BaseModel):
 
     def get_article_text(self):
         if self.article_text:
-            return filter_text_content(self.article_text)
+            return clean_and_normalize_text(self.article_text)
+
+    def get_article_relevant_information(self):
+        """
+        Retrieve relevant information from the article.
+        """
+        relevant_information = ""
+        if self.extracted_title:
+            relevant_information += f"Title: {self.extracted_title}\n"
+
+        if self.extracted_news_source:
+            relevant_information += f"News Source: {self.extracted_news_source}\n"
+
+        relevant_information += f"Summary: {self.get_article_summary()}\n"
 
     def get_category(self):
         if self.generated_category:

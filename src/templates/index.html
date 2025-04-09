@@ -7,13 +7,11 @@
   {% for newsItem in news_items %}
   <article>
     <h2>
-      <a href="{{ newsItem.get_online_url() or newsItem.data_URL }}" target="_blank">
-        {{ newsItem.get_title() }}
-      </a>
+      <a href="{{ newsItem.get_online_url() }}" target="_blank"> {{ newsItem.get_title() }} </a>
     </h2>
     <div class="article-meta">
       <div class="meta-info">
-        <p>ID: {{newsItem.id}}</p>
+        <p>Supabase ID: {{newsItem.id}}</p>
         <p>Published: {{ newsItem.get_date_published() }}</p>
         <p>Source: {{ newsItem.get_news_source() }}</p>
         <p>Author: {{ newsItem.extracted_author or newsItem.data_json.author or 'Unknown' }}</p>
@@ -33,6 +31,9 @@
             %} />
           Download to CSV
         </label>
+      </div>
+      <div class="delete-article">
+        <button class="delete-btn" data-id="{{ newsItem.id }}">Delete</button>
       </div>
     </div>
     <div class="article-details">
@@ -56,6 +57,29 @@
     });
   });
 
+  document.querySelectorAll(".delete-btn").forEach((button) => {
+    button.addEventListener("click", (event) => {
+      const articleId = event.target.dataset.id;
+      const confirmation = confirm(
+        "Are you sure you want to delete this article? This action cannot be undone."
+      );
+      if (confirmation) {
+        fetch(`/api/delete_article/${articleId}`, {
+          method: "DELETE",
+        })
+          .then((response) => {
+            if (response.ok) {
+              alert("Article deleted successfully.");
+              location.reload();
+            } else {
+              alert("Failed to delete the article.");
+            }
+          })
+          .catch(() => alert("An error occurred while deleting the article."));
+      }
+    });
+  });
+
   document.getElementById("download-csv").addEventListener("click", () => {
     window.location.href = "/api/download_csv";
   });
@@ -67,15 +91,9 @@
 <div class="pagination">
   <p>Page {{ page }} of {{ total_pages }}</p>
   {% if page > 1 %}
-  <a
-    href="{{ url_for('client_routes.index', page=page-1, sort_date=sort_date, sort_title=sort_title, source=selected_sources) }}"
-    >Previous</a
-  >
+  <a href="{{ url_for('client_routes.index', page=page-1, source=selected_sources) }}">Previous</a>
   {% endif %} {% if page < total_pages %}
-  <a
-    href="{{ url_for('client_routes.index', page=page+1, sort_date=sort_date, sort_title=sort_title, source=selected_sources) }}"
-    >Next</a
-  >
+  <a href="{{ url_for('client_routes.index', page=page+1, source=selected_sources) }}">Next</a>
   {% endif %}
 </div>
 {% endblock %}

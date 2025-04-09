@@ -2,13 +2,13 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>Canadian Financial News Hub</title>
+    <title>Canadian Housing + Financing News Hub</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
     <script src="{{ url_for('static', filename='scripts.js') }}" defer></script>
   </head>
   <body>
     <header>
-      <h1>Highline Beta's RSS Aggregator</h1>
+      <h1>News Aggregator</h1>
     </header>
 
     <!-- queries -->
@@ -50,23 +50,6 @@
 
     <div id="totalNumberOfPagesOfArticlesFound">
       Found {{ total_pages }} total pages of articles.
-    </div>
-
-    <!-- sorting -->
-    <div class="sorting">
-      <h2>Sort by:</h2>
-
-      <div>
-        <h3>Date:</h3>
-        <button id="sortDateAsc">Oldest</button>
-        <button id="sortDateDesc">Most Recent</button>
-      </div>
-
-      <div>
-        <h3>Title:</h3>
-        <button id="sortTitleAsc">A → Z</button>
-        <button id="sortTitleDesc">Z → A</button>
-      </div>
     </div>
 
     <!-- what index use -->

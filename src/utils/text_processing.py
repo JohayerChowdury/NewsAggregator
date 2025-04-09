@@ -2,12 +2,6 @@ import re
 from bs4 import BeautifulSoup
 
 
-def remove_accented_chars(text):
-    text = text.encode("ascii", "ignore").decode("ascii")  # Remove non-ASCII characters
-    text = text.replace("\\xa0", "\n\n")  # Preserve paragraph breaks
-    return text
-
-
 def remove_websites_and_social_media_mentions(text):
     # List of common social media & general website labels
     platform_keywords = [
@@ -41,28 +35,10 @@ def remove_websites_and_social_media_mentions(text):
     return text
 
 
-def filter_text_content(text):
-    """Clean and normalize text"""
-    text = re.sub(r"<[^>]+>", "", text)  # Remove HTML tags
-    text = re.sub(r"http\S+", "", text)  # Remove URLs
-    text = re.sub(r"\s+", " ", text).strip()  # Normalize whitespace
-
-    # Replace non-breaking spaces (&nbsp;) with regular spaces
-    text = text.replace("&nbsp;", " ")
-
+def filter_text_for_llm(text):
+    """Filter text to remove unneeded content for LLM/AI generation."""
     # Remove social media mentions and URLs
     text = remove_websites_and_social_media_mentions(text)
-
-    # Remove dates in this format Jan 22, 2025
-    text = re.sub(
-        r"(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2},\s+\d{4}",
-        "",
-        text,
-    )
-
-    # Normalize whitespace and fix encoding
-    text = " ".join(text.split()).strip()
-    text = remove_accented_chars(text)
 
     # Remove common texts that are not relevant
     phrases_to_remove = [
@@ -80,10 +56,10 @@ def filter_text_content(text):
         r"Click here to view in browser\.",
         r"Click here to read more\.",
         r"Read more$",
-        r"Comments may take up to an hour to appear on the site.",
-        r"You will receive an email if there is a reply to your comment, an update to a thread you follow or if a user you follow comments.",
+        r"Comments may take up to an hour to appear on the site\.",
+        r"You will receive an email if there is a reply to your comment, an update to a thread you follow or if a user you follow comments\.",
         r"For more information *?click here\.",
-        r"By continuing to use our site, you agree to our Terms of Use and Privacy Policy."
+        r"By continuing to use our site, you agree to our Terms of Use and Privacy Policy.",
         r"Visit our Community Guidelines",
         # Add more patterns as needed
     ]
@@ -98,12 +74,31 @@ def filter_text_content(text):
     return text
 
 
+def clean_and_normalize_text(text):
+    """Clean and normalize text for human-readable display."""
+    text = re.sub(r"<[^>]+>", "", text)  # Remove HTML tags
+    text = re.sub(r"http\S+", "", text)  # Remove URLs
+    text = re.sub(r"\s+", " ", text).strip()  # Normalize whitespace
+
+    # Replace non-breaking spaces (&nbsp;) with regular spaces
+    text = text.replace("&nbsp;", " ")
+
+    # Normalize whitespace and fix encoding
+    text = " ".join(text.split()).strip()
+
+    return text
+
+
 def normalize_html_content(raw_html):
     # Parse HTML and extract text
     soup = BeautifulSoup(raw_html, "html.parser")
     text = soup.get_text(separator=" ")  # Preserve some spacing between elements
 
-    text = filter_text_content(text)
+    # Clean and normalize text for human-readable display
+    text = clean_and_normalize_text(text)
+
+    # Optionally filter text for LLM/AI generation
+    text = filter_text_for_llm(text)
 
     return text
 

@@ -1,8 +1,6 @@
 from requests_cache import CachedSession
 from bs4 import BeautifulSoup
 
-from ...utils.text_processing import filter_text_content
-
 # PROXY_ADDRESSES = {
 #     "http": "http://72.206.181.123:4145",
 #     "https": "http://67.43.227.229",
@@ -71,4 +69,5 @@ def extract_clean_article(
         if not exclude:
             clean_paragraphs.append(p.get_text(strip=True))
 
-    return str(filter_text_content("\n".join(clean_paragraphs)))
+    # TODO: Add more sophisticated cleaning logic if needed
+    return str("\n".join(clean_paragraphs))

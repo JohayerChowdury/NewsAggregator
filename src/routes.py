@@ -1,13 +1,36 @@
-from flask import Blueprint, request, render_template, jsonify
-
-from .app import database_service, scraper, openai_service
-from .services.crawlers import rss_feed_crawl, google_news_crawl
+from flask import (
+    Blueprint,
+    request,
+    render_template,
+    jsonify,
+    session,
+    redirect,
+    url_for,
+)
+from functools import wraps
+from .app import database_service, scraper, openai_service, auth_service
 from .models import NewsItemSchema
-from .utils import filter_text_content
+
+# from .utils import clean_and_normalize_text
+from .services.crawlers.crawler_service import CrawlerService
 
 # Blueprints
 client_routes = Blueprint("client_routes", __name__)
 api_routes = Blueprint("api_routes", __name__, url_prefix="/api")
+
+
+def auth_required(f):
+    """
+    Decorator to require authentication for a route.
+    """
+
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if "user" not in session:
+            return redirect(url_for("client_routes.index"))
+        return f(*args, **kwargs)
+
+    return decorated_function
 
 
 # Client-side routes
@@ -15,27 +38,25 @@ api_routes = Blueprint("api_routes", __name__, url_prefix="/api")
 def index():
     page = request.args.get("page", 1, type=int)
     per_page = 20
-    start = (page - 1) * per_page
-    end = start + per_page - 1
 
-    sort_date = request.args.get("sort_date", "desc")
-    sort_title = request.args.get("sort_title", "asc")
-    sort = {
-        "extracted_published_date": sort_date == "asc",
-        "extracted_title": sort_title == "desc",
-    }
-
-    all_news_items = []
     db_query = database_service.query_select_news_items_from_db()
     db_query_response = db_query.execute()
 
+    total_count = 0
     if db_query_response.data:
-        all_news_items = [NewsItemSchema(**item) for item in db_query_response.data]
-    else:
-        return render_template("index.html", news_items=[], page=page, total_pages=0)
+        total_count = len(db_query_response.data)
 
-    paginated_news_items = all_news_items[start : end + 1]
-    total_count = len(all_news_items)
+    paginated_query = database_service.paginate_query(
+        db_query,
+        page=page,
+        per_page=per_page,
+    )
+    paginated_query_response = paginated_query.execute()
+    if paginated_query_response.data:
+        paginated_news_items = [
+            NewsItemSchema(**item) for item in paginated_query_response.data
+        ]
+
     total_pages = (total_count + per_page - 1) // per_page
 
     return render_template(
@@ -47,65 +68,24 @@ def index():
 
 
 # API routes
-@api_routes.route("/crawl", methods=["POST"])
-async def crawl():
-    news_items = []
-    try:
-        crawled_articles_from_rss = await rss_feed_crawl.main()
-        news_items.extend(crawled_articles_from_rss)
-    except Exception as e:
-        print(f"Error crawling RSS feeds: {e}")
-
-    try:
-        crawled_articles_from_google = await google_news_crawl.main()
-        news_items.extend(crawled_articles_from_google)
-    except Exception as e:
-        print(f"Error crawling Google News: {e}")
-
-    inserted_items = []
-    for item in news_items:
-        response = database_service.insert_news_item(item)
-        inserted_items.append(response)
-
-    return jsonify(inserted_items)
-
-
-@api_routes.route("/scrape", methods=["POST"])
-async def scrape():
-    # db_query = database_service.query_news_items_from_db() # uncomment if you want to scrape all items
-    db_query = database_service.query_select_news_items_from_db(
-        {
-            "article_text": "null",
-        }
-    )
-
-    db_query_response = db_query.execute()
-
-    news_items = []
-    if db_query_response.data:
-        news_items = [NewsItemSchema(**item) for item in db_query_response.data]
-
-    inserted_items = []
-
+@api_routes.route("/crawl-sources-and-insert-into-database", methods=["POST"])
+async def crawl_sources_and_insert_into_database():
+    """
+    Endpoint to crawl articles from all sources and insert articles into database.
+    """
+    news_items = await CrawlerService.crawl_all_sources()
     if len(news_items) > 0:
+        print(f"Crawled {len(news_items)} articles from all sources")
         for item in news_items:
-            try:
-                scraped_text = await scraper.scrape_url(item.get_online_url())
-                if scraped_text:
-                    # print(f"Scraped text for item id {item.id}: {scraped_text}")
-                    filtered_text = filter_text_content(scraped_text)
-                    # print(f"Filtered text for item id {item.id}: {filtered_text}")
-                    item.article_text = filtered_text
-                    database_service.update_news_item(item.id, item)
-                    inserted_items.append(item)
-                    print(f"Updated item id {item.id} in the database")
-                else:
-                    inserted_items.append(f"no text with item id {item.id}")
-            except Exception as e:
-                print(f"Error scraping item id {item.id}: {e}")
-                inserted_items.append(f"error with item id {item.id}")
-
-    return jsonify(inserted_items)
+            print(f"Database Insert: Attempting NewsItem with URL: {item.data_URL}")
+            response = database_service.insert_news_item(item)
+            if response:
+                print(
+                    f"Database Insert Success: Created with ID {NewsItemSchema(**response).id}"
+                )
+            else:
+                print(f"Database Insert Failed")
+    return news_items
 
 
 @api_routes.route("/assign-categories", methods=["POST"])
@@ -167,3 +147,48 @@ def generate_summaries():
                 inserted_items.append(item)
 
     return jsonify(inserted_items)
+
+
+@api_routes.route("/delete_article/<int:article_id>", methods=["DELETE"])
+def delete_article(article_id):
+    """
+    Endpoint to delete an article by its ID.
+    """
+    try:
+        response = database_service.delete_news_item(article_id)
+        if response:
+            return jsonify({"message": "Article deleted successfully."}), 200
+        else:
+            return jsonify({"error": "Article not found or could not be deleted."}), 404
+    except Exception as e:
+        return jsonify({"error": f"An error occurred: {str(e)}"}), 500
+
+
+# @api_routes.route("/auth/sign-up", methods=["POST"])
+# def sign_up():
+#     data = request.json
+#     email = data.get("email")
+#     password = data.get("password")
+#     if not email or not password:
+#         return jsonify({"error": "Email and password are required"}), 400
+
+#     response = auth_service.sign_up(email, password)
+#     return jsonify(response)
+
+
+# @api_routes.route("/auth/sign-in", methods=["POST"])
+# def sign_in():
+#     data = request.json
+#     email = data.get("email")
+#     password = data.get("password")
+#     if not email or not password:
+#         return jsonify({"error": "Email and password are required"}), 400
+
+#     response = auth_service.sign_in(email, password)
+#     return jsonify(response)
+
+
+# @api_routes.route("/auth/sign-out", methods=["POST"])
+# def sign_out():
+#     response = auth_service.sign_out()
+#     return jsonify(response)

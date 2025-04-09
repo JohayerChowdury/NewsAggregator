@@ -1,4 +1,5 @@
 from supabase import create_client, Client, PostgrestAPIResponse
+from postgrest import SyncSelectRequestBuilder
 from typing import List, Optional
 
 # from googlenewsdecoder import GoogleDecoder
@@ -50,6 +51,20 @@ class SupabaseDBService:
                 query = query.order(column, desc=desc)
 
         return query
+
+    @staticmethod
+    def paginate_query(
+        query: SyncSelectRequestBuilder,
+        page: int = 1,
+        per_page: int = 20,
+    ):
+        """
+        Paginate the query results.
+        """
+        startIndex = (page - 1) * per_page
+        endIndex = startIndex + per_page - 1
+
+        return query.range(startIndex, endIndex)
 
     def fetch_news_items_by_id(self, id: int) -> Optional[dict]:
         """
@@ -235,3 +250,20 @@ class SupabaseDBService:
     #     except Exception as e:
     #         print(f"Error updating generated_category: {e}")
     #         return None
+
+    # DELETE METHODS
+    def delete_news_item(self, id: int) -> Optional[dict]:
+        """
+        Delete a news item from the database.
+        """
+        try:
+            response: PostgrestAPIResponse = (
+                self.supabase_client.table(self.NEWS_ITEMS_TABLE)
+                .delete()
+                .eq("id", id)
+                .execute()
+            )
+            return response.data[0] if response.data else None
+        except Exception as e:
+            print(f"Error deleting news item: {e}")
+            return None

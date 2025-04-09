@@ -4,7 +4,7 @@
 from .date_helpers import standardize_date_type_format, get_news_search_dates
 from .text_processing import (
     normalize_html_content,
-    filter_text_content,
+    clean_and_normalize_text,
     decode_gnews_url,
 )
 
