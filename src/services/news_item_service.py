@@ -195,24 +195,33 @@ class NewsItemService:
         )
         db_query_response = db_query.execute()
 
-        articles_requiring_processing = []
+        articles_requiring_generation = []
         if db_query_response.data:
-            articles_requiring_processing = [
-                NewsItemSchema(**item).get_json() for item in db_query_response.data
+            articles_requiring_generation = [
+                NewsItemSchema(**item) for item in db_query_response.data
             ]
 
-        for id in articles_requiring_processing:
+        news_items_ids = []
+        for article in articles_requiring_generation:
             try:
-                article = self.database_service.fetch_news_items_by_id(id)
-
+                article_text = article.get_article_text()
                 # Generate categories and summaries
                 article.generated_category = self.openai_service.assign_category(
-                    article.article_text
+                    article_text
                 )
                 article.generated_summary = self.openai_service.generate_summary(
-                    article.article_text
+                    article_text
                 )
 
-                self.database_service.update_news_item(id, article)
+                update_response = self.database_service.update_news_item(
+                    article.id, article
+                )
+                if update_response.is_success():
+                    print(f"Database Update Success: ID {update_response.data.id}")
+                    news_items_ids.append(int(update_response.data.id))
+                else:
+                    print(f"Database Update Failed: {update_response.message}")
             except Exception as e:
-                print(f"Error processing article {id.data_URL}: {e}")
+                print(f"Error scraping article: {e}")
+
+        return news_items_ids

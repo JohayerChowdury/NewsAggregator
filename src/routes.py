@@ -172,6 +172,26 @@ async def scrape_articles():
         return jsonify({"error": f"An error occurred: {str(e)}"}), 500
 
 
+@api_routes.route("/generate-content", methods=["POST"])
+async def generate_content():
+    """
+    Endpoint to generate content for articles that require it.
+    """
+    try:
+        articles = await news_item_service.summarize_and_categorize_articles()
+        return (
+            jsonify(
+                {
+                    "message": "Content for articles with the following IDs have been generated and updated in the database.",
+                    "data": articles,
+                }
+            ),
+            200,
+        )
+    except Exception as e:
+        return jsonify({"error": f"An error occurred: {str(e)}"}), 500
+
+
 @api_routes.route("/remove_article/<int:article_id>", methods=["POST"])
 def remove_article(article_id: int):
     """

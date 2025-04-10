@@ -4,6 +4,8 @@ from openai import OpenAI
 
 load_dotenv()
 
+# TODO: Use AsyncOpenAI for concurrent processing https://github.com/openai/openai-python/blob/main/examples/async_demo.py
+
 
 class OpenAIService:
     def __init__(self, openai_api_key=None, organization=None, project=None):
@@ -43,7 +45,7 @@ class OpenAIService:
             "Locality Updates regarding Construction & Community Considerations",
             "Other Updates regarding Middle Housing Financing in Canada",
         ]
-        user_prompt = f"Text: '''{text}''' Categories: {categories}"
+        user_prompt = f"Text: '''{text}'''"
         # print(f"User prompt: {user_prompt}")  # DEBUG
         try:
             response = self.openai_client.chat.completions.create(
@@ -53,8 +55,8 @@ class OpenAIService:
                     {
                         "role": "system",
                         "content": (
-                            f"You are a strict classification assistant. You will be given text delimited by triple quotes and a list of categories. "
-                            f"Your task is to return ONLY ONE category from the list provided, using the text provided. "
+                            f"You are a strict classification assistant. You will be given text delimited by triple quotes."
+                            f"Using this given text, your task is to return ONLY ONE category from the following list: {' '.join(categories)}."
                             f"Do not explain your choice. Do not include any other text or punctuation. "
                             f"No reasoning. No extra text. Respond only with one category from the list, nothing else please."
                         ),

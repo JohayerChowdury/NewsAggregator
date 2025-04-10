@@ -3,7 +3,7 @@
 <!-- content -->
 
 {% block content %}
-<div class="container">
+<div class="container" style="display: flex; flex-direction: column; gap: 20px">
   <div>
     <h1>Crawl for New Articles</h1>
     <p>Click the button below to start crawling for new articles.</p>
@@ -11,10 +11,19 @@
     <p id="crawl-status"></p>
   </div>
   <div>
-    <h1>Scrape Articles</h1>
+    <h1>Scrape Online Content of Articles</h1>
     <p>Click the button below to start retrieving online content from articles.</p>
-    <button id="scrape-button" class="btn btn-primary">Scrape Articles</button>
+    <button id="scrape-button" class="btn btn-primary">Scrape Existing Articles</button>
     <p id="scrape-status"></p>
+  </div>
+  <div>
+    <h1>Generate Content for Articles with AI</h1>
+    <p>
+      Click the button below to start generating content for articles using local LLM / OpenAI (with
+      provided OPENAI_API_KEY).
+    </p>
+    <button id="generate-button" class="btn btn-primary">Generate Content</button>
+    <p id="generate-status"></p>
   </div>
 </div>
 <script>
@@ -42,6 +51,19 @@
 
     if (response.ok) {
       scrapeStatusElement.innerHTML = `Scraping completed. <a href="{{ url_for('client_routes.news_items_on_display') }}">View the updated articles.</a>`;
+    }
+  });
+
+  const generateArticlesButton = document.getElementById("generate-button");
+  const generateStatusElement = document.getElementById("generate-status");
+  generateArticlesButton.addEventListener("click", async function () {
+    generateStatusElement.innerText = "Generating content for articles. Updating the database...";
+    const response = await fetch("{{ url_for('api_routes.generate_content') }}", {
+      method: "POST",
+    });
+
+    if (response.ok) {
+      generateStatusElement.innerHTML = `Content generation completed. <a href="{{ url_for('client_routes.news_items_on_display') }}">View the updated articles.</a>`;
     }
   });
 </script>
