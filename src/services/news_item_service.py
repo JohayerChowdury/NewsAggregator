@@ -168,7 +168,7 @@ class NewsItemService:
                     article.get_online_url()
                 )
                 if result:
-                    article.crawl4ai_result = result.model_dump()
+                    article.crawl4ai_result = result
                     update_response = self.database_service.update_news_item(
                         article.id, article
                     )

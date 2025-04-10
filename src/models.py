@@ -9,6 +9,7 @@ from typing import Optional
 from .utils import (
     standardize_date_type_format,
     clean_and_normalize_text,
+    normalize_html_content,
 )
 
 
@@ -164,10 +165,9 @@ class NewsItemSchema(BaseModel):
 
     def get_article_text(self):
         if self.crawl4ai_result:
-            # Extract the text from the crawl4ai result
-            result_markdown = self.crawl4ai_result.get("markdown")
-            if result_markdown:
-                return result_markdown
+            return normalize_html_content(
+                self.crawl4ai_result.get("fit_html", "cleaned_html")
+            )
         else:
             return self.get_article_relevant_information()
 

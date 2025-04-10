@@ -136,7 +136,7 @@ class Crawl4AIScraper:
 
         return result
 
-    async def scrape_url(self, url):
+    async def scrape_url(self, url) -> dict | None:
         """
         Process a single URL asynchronously.
         """
@@ -146,7 +146,14 @@ class Crawl4AIScraper:
                     await crawler.arun(url=url, config=self.run_config)
                 )
                 if result:
-                    return result
+                    return {
+                        "cleaned_html": result.cleaned_html,
+                        "raw_markdown": result.markdown.raw_markdown,
+                        "fit_markdown": result.markdown.fit_markdown,
+                        "fit_html": result.markdown.fit_html,
+                        "extracted_content": result.extracted_content,
+                        "metadata": result.metadata,
+                    }
                 else:
                     print(f"Failed to extract data from {url}")
 
