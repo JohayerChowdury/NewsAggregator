@@ -1,0 +1,21 @@
+{% extends 'news_items/base.html' %}
+
+<!-- content start block -->
+{% block content %}
+
+<div class="container">
+  <h2>{{title}}</h2>
+</div>
+
+<!-- pagination block -->
+{% include 'news_items/pagination.html' %}
+
+<!-- articles block -->
+{% include 'news_items/list.html' %}
+
+<!-- pagination block -->
+{% include 'news_items/pagination.html' %}
+
+<script></script>
+
+{% endblock %}

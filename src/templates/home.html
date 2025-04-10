@@ -1,0 +1,16 @@
+<!-- base -->
+{% extends 'base.html' %}
+<!-- content -->
+{% block content %}
+<div class="container">
+  <div style="display: flex; gap: 50px; flex-direction: column">
+    <a href="{{ url_for('client_routes.news_items_on_display') }}">
+      View News Items Marked for Display
+    </a>
+
+    <a href="{{ url_for('client_routes.news_items') }}"> View All News Items Saved in Database </a>
+
+    <a href="{{ url_for('client_routes.crawl_for_news') }}"> Add News Items to Database </a>
+  </div>
+</div>
+{% endblock %}

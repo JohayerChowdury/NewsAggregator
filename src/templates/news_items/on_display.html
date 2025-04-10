@@ -1,0 +1,60 @@
+{% extends 'news_items/base.html' %}
+
+<!-- content start block -->
+{% block content %}
+
+<div class="container">
+  <h2>{{title}}</h2>
+</div>
+
+<!-- pagination block -->
+{% include 'news_items/pagination.html' %}
+
+<!-- articles block -->
+{% include 'news_items/list.html' %}
+
+<!-- pagination block -->
+{% include 'news_items/pagination.html' %}
+
+<script>
+  document.querySelectorAll(".toggle-display").forEach((checkbox) => {
+    checkbox.addEventListener("change", (event) => {
+      const articleId = event.target.dataset.id;
+      const isSelected = event.target.checked;
+      fetch(`/api/toggle_display/${articleId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ selected: isSelected }),
+      });
+    });
+  });
+
+  document.querySelectorAll(".delete-btn").forEach((button) => {
+    button.addEventListener("click", (event) => {
+      const articleId = event.target.dataset.id;
+      const confirmation = confirm(
+        "Are you sure you want to remove this article from display? The article will still be saved in the database."
+      );
+      if (confirmation) {
+        fetch(`/api/remove_article/${articleId}`, {
+          method: "POST",
+        })
+          .then((response) => {
+            if (response.ok) {
+              alert("Article removed from display successfully.");
+              location.reload();
+            } else {
+              alert("Failed to delete the article.");
+            }
+          })
+          .catch(() => alert("An error occurred while deleting the article."));
+      }
+    });
+  });
+
+  document.getElementById("download-csv").addEventListener("click", () => {
+    window.location.href = "/api/download_csv";
+  });
+</script>
+
+{% endblock %}

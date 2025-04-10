@@ -1,13 +1,11 @@
 <!-- pagination -->
 <div class="container">
-  <p>Page {{ page }} of {{ total_pages }}</p>
-  {% if page > 1 %}
-  <a href="{{ url_for('client_routes.display_news_items', page=page-1, source=selected_sources) }}"
-    >Previous</a
-  >
-  {% endif %} {% if page < total_pages %}
-  <a href="{{ url_for('client_routes.display_news_items', page=page+1, source=selected_sources) }}"
-    >Next</a
-  >
-  {% endif %}
+  <p>Page {{ page }} of {{ total_pages }}. {{total_count}} articles on display.</p>
+  <div style="display: flex; justify-content: space-between">
+    {% if page > 1 %}
+    <a href="{{ pagination_url(page=page-1) }}">Previous Page</a>
+    {% endif %} {% if page < total_pages %}
+    <a href="{{ pagination_url(page=page+1) }}">Next Page</a>
+    {% endif %}
+  </div>
 </div>

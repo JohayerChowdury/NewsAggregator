@@ -1,0 +1,32 @@
+<!-- articles block -->
+<div class="container">
+  {% for newsItem in news_items %}
+  <article>
+    <h2>
+      <a href="{{ newsItem.get_online_url() }}" target="_blank"> {{ newsItem.get_title() }} </a>
+    </h2>
+    <div class="article-section">
+      <div class="meta-info">
+        <p>Supabase DB ID: {{newsItem.id}}</p>
+        <p>Published: {{ newsItem.get_date_published() }}</p>
+        <p>Source: {{ newsItem.get_news_source() }}</p>
+        <p>Author: {{ newsItem.extracted_author or newsItem.data_json.author or 'Unknown' }}</p>
+      </div>
+    </div>
+    <div class="article-section">
+      <p class="article-category">Category: {{ newsItem.get_category() or 'Uncategorized' }}</p>
+      <p class="article-relevant-information">{{ newsItem.get_article_relevant_information() }}</p>
+    </div>
+    <div class="article-section">
+      {% if show_remove_button %}
+      <div class="delete-article">
+        <button class="delete-btn" data-id="{{ newsItem.id }}">Remove from Display</button>
+      </div>
+      {% endif %}
+      <!-- <div class="generate-category">
+          <button class="generate-category-btn" data-id="{{ newsItem.id }}">Generate Category</button>
+        </div> -->
+    </div>
+  </article>
+  {% endfor %}
+</div>

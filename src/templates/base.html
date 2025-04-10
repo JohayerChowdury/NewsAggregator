@@ -8,9 +8,11 @@
     <script src="{{ url_for('static', filename='scripts.js') }}" defer></script>
   </head>
   <body>
-    <header>
-      <h1>News Aggregator</h1>
-    </header>
+    <div class="header">
+      <a href="{{ url_for('client_routes.home') }}">
+        <h1>News Aggregator</h1>
+      </a>
+    </div>
     {% block content %}{% endblock %}
   </body>
 </html>

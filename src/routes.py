@@ -27,15 +27,15 @@ def auth_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if "user" not in session:
-            return redirect(url_for("client_routes.index"))
+            return redirect(url_for("client_routes.home"))
         return f(*args, **kwargs)
 
     return decorated_function
 
 
 @client_routes.route("/", methods=["GET"])
-def index():
-    return render_template("index.html")
+def home():
+    return render_template("home.html")
 
 
 @client_routes.route("/crawl-for-news", methods=["GET"])
@@ -43,10 +43,10 @@ def crawl_for_news():
     return render_template("crawl_for_news.html")
 
 
-@client_routes.route("/news-items", methods=["GET"])
-def display_news_items():
+@client_routes.route("/news-items-on-display", methods=["GET"])
+def news_items_on_display():
     page = request.args.get("page", 1, type=int)
-    per_page = 20
+    per_page = 15
 
     db_query = database_service.query_select_news_items_from_db(
         filters={
@@ -74,10 +74,54 @@ def display_news_items():
     total_pages = (total_count + per_page - 1) // per_page
 
     return render_template(
-        "news_items/index.html",
+        "news_items/on_display.html",
         news_items=paginated_news_items,
         page=page,
+        total_count=total_count,
         total_pages=total_pages,
+        pagination_url=lambda page: url_for(
+            "client_routes.news_items_on_display", page=page
+        ),
+        title="News Items on Display",
+        show_remove_button=True,
+    )
+
+
+@client_routes.route("/news-items", methods=["GET"])
+def news_items():
+    page = request.args.get("page", 1, type=int)
+    per_page = 15
+
+    db_query = database_service.query_select_news_items_from_db()
+    db_query_response = db_query.execute()
+
+    total_count = 0
+    if db_query_response.data:
+        total_count = len(db_query_response.data)
+
+    paginated_query = database_service.paginate_query(
+        db_query,
+        page=page,
+        per_page=per_page,
+    )
+    paginated_news_items = []
+    paginated_query_response = paginated_query.execute()
+    if paginated_query_response.data:
+        paginated_news_items = [
+            NewsItemSchema(**item) for item in paginated_query_response.data
+        ]
+
+    total_pages = (total_count + per_page - 1) // per_page
+
+    return render_template(
+        "news_items/view_all.html",
+        news_items=paginated_news_items,
+        page=page,
+        total_count=total_count,
+        total_pages=total_pages,
+        pagination_url=lambda page: url_for("client_routes.news_items", page=page),
+        title="All News Items",
+        show_remove_button=False,
     )
 
 

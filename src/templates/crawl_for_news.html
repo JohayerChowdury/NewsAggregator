@@ -23,7 +23,7 @@
     );
 
     if (response.ok) {
-      statusElement.innerHTML = `Crawling completed. <a href="{{ url_for('client_routes.display_news_items') }}">View the new articles added.</a>`;
+      statusElement.innerHTML = `Crawling completed. <a href="{{ url_for('client_routes.news_items_on_display') }}">View the new articles added.</a>`;
     }
   });
 </script>
