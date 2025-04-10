@@ -55,10 +55,15 @@ class NewsItemSchema(BaseModel):
     extracted_author: Optional[str] = Field(None, description="Author of the article")
     extracted_summary: Optional[str] = Field(None, description="Extracted summary")
 
-    article_text: Optional[str] = Field(None, description="Full text of the article")
+    crawl4ai_result: Optional[dict] = Field(
+        None, description="Result from crawl4ai scraper"
+    )
 
     generated_category: Optional[str] = Field(None, description="AI-Generated category")
     generated_summary: Optional[str] = Field(None, description="AI-Generated summary")
+
+    def get_json(self) -> dict:
+        return self.model_dump(exclude_unset=True)
 
     def get_online_url(self) -> str:
         """
@@ -142,10 +147,6 @@ class NewsItemSchema(BaseModel):
 
         return None
 
-    def get_article_text(self):
-        if self.article_text:
-            return clean_and_normalize_text(self.article_text)
-
     def get_article_relevant_information(self):
         """
         Retrieve relevant information from the article.
@@ -160,6 +161,15 @@ class NewsItemSchema(BaseModel):
         relevant_information += f"Summary: {self.get_article_summary()}\n"
 
         return relevant_information
+
+    def get_article_text(self):
+        if self.crawl4ai_result:
+            # Extract the text from the crawl4ai result
+            result_markdown = self.crawl4ai_result.get("markdown")
+            if result_markdown:
+                return result_markdown
+        else:
+            return self.get_article_relevant_information()
 
     def get_category(self):
         if self.generated_category:

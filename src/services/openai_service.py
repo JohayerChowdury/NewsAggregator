@@ -32,10 +32,17 @@ class OpenAIService:
     def get_client(self):
         return self.openai_client
 
-    def assign_category(self, text, categories):
+    def assign_category(self, text):
         """
         Assign a category using OpenAI chat completions.
         """
+
+        categories = [
+            "Government Updates regarding Legal & Financing Implications",
+            "Company Updates regarding Products & Programs Offered",
+            "Locality Updates regarding Construction & Community Considerations",
+            "Other Updates regarding Middle Housing Financing in Canada",
+        ]
         user_prompt = f"Text: '''{text}''' Categories: {categories}"
         # print(f"User prompt: {user_prompt}")  # DEBUG
         try:
@@ -70,7 +77,6 @@ class OpenAIService:
             return None
 
     def generate_summary(self, text, max_tokens=40):
-        # pass
         developer_prompt = (
             "You are a strict summarization assistant. You will be given text delimited by triple quotes. "
             "Your task is to summarize the text in a concise manner. "

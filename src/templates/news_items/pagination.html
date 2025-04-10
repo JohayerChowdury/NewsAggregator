@@ -1,6 +1,6 @@
 <!-- pagination -->
 <div class="container">
-  <p>Page {{ page }} of {{ total_pages }}. {{total_count}} articles on display.</p>
+  <p>Page {{ page }} of {{ total_pages }}. {{total_count}} articles.</p>
   <div style="display: flex; justify-content: space-between">
     {% if page > 1 %}
     <a href="{{ pagination_url(page=page-1) }}">Previous Page</a>

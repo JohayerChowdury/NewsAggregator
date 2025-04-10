@@ -8,11 +8,14 @@ from flask import (
     url_for,
 )
 from functools import wraps
-from .app import database_service, scraper, openai_service, auth_service
+from .app import (
+    database_service,
+    auth_service,
+    news_item_service,
+)
 from .models import NewsItemSchema
 
 # from .utils import clean_and_normalize_text
-from .services.crawlers.crawler_service import CrawlerService
 
 # Blueprints
 client_routes = Blueprint("client_routes", __name__)
@@ -38,9 +41,9 @@ def home():
     return render_template("home.html")
 
 
-@client_routes.route("/crawl-for-news", methods=["GET"])
-def crawl_for_news():
-    return render_template("crawl_for_news.html")
+@client_routes.route("/getting-news", methods=["GET"])
+def getting_news():
+    return render_template("getting_news.html")
 
 
 @client_routes.route("/news-items-on-display", methods=["GET"])
@@ -83,7 +86,7 @@ def news_items_on_display():
             "client_routes.news_items_on_display", page=page
         ),
         title="News Items on Display",
-        show_remove_button=True,
+        show_remove_article_button=True,
     )
 
 
@@ -92,7 +95,7 @@ def news_items():
     page = request.args.get("page", 1, type=int)
     per_page = 15
 
-    db_query = database_service.query_select_news_items_from_db()
+    db_query = database_service.query_select_news_items_from_db(sort={"id": "asc"})
     db_query_response = db_query.execute()
 
     total_count = 0
@@ -121,138 +124,52 @@ def news_items():
         total_pages=total_pages,
         pagination_url=lambda page: url_for("client_routes.news_items", page=page),
         title="All News Items",
-        show_remove_button=False,
+        show_remove_article_button=False,
     )
 
 
-@api_routes.route("/crawl-sources-and-insert-into-database", methods=["POST"])
-async def crawl_sources_and_insert_into_database():
+@api_routes.route("/news", methods=["GET", "POST"])
+async def news():
+    if request.method == "GET":
+        articles = await news_item_service.crawl_all_sources()
+        return (
+            jsonify(
+                {
+                    "message": "Articles with the following IDs have been crawled and added to the database.",
+                    "data": articles,
+                }
+            ),
+            200,
+        )
+    elif request.method == "POST":
+        articles = await news_item_service.summarize_and_categorize_articles()
+        return jsonify(
+            {
+                "message": "Articles have been scraped and summarized.",
+                "data": articles,
+            }
+        )
+    return jsonify({"error": "Invalid request method"}), 405
+
+
+@api_routes.route("/scrape-articles", methods=["POST"])
+async def scrape_articles():
     """
-    Endpoint to crawl articles from all sources and insert articles into database.
+    Endpoint to scrape articles that require scraping.
     """
-    news_items = await CrawlerService.crawl_all_sources()
-    if len(news_items) > 0:
-        print(f"Crawled {len(news_items)} articles from all sources")
-        for item in news_items:
-            print(f"Database Insert: Attempting NewsItem with URL: {item.data_URL}")
-            response = database_service.insert_news_item(item)
-            if response.is_success():
-                print(f"Database Insert Success: Created with ID {response.data.id}")
-            else:
-                print(f"Database Insert Failed: {response.message}")
-    return 200
-
-
-# @api_routes.route("/crawl-sources-and-save-to-file", methods=["POST"])
-# async def crawl_sources_and_save_to_file():
-#     """
-#     Endpoint to crawl articles from all sources and save them to a CSV file.
-#     """
-#     news_items = await CrawlerService.crawl_all_sources()
-#     if len(news_items) > 0:
-#         print(f"Crawled {len(news_items)} articles from all sources")
-#         with open("news_items.csv", "w") as file:
-#             for item in news_items:
-#                 file.write(f"{item.extracted_title},{item.extracted_URL}\n")
-#     return 200
-
-
-# @api_routes.route("/assign-category/<article_id>", methods=["POST"])
-# def assign_category(article_id: int):
-#     """
-#     Endpoint to assign a category to an article by its ID.
-#     """
-#     try:
-#         db_query = database_service.query_select_news_items_from_db(
-#             filters={"id": article_id},
-#             not_null_fields=["article_text"],
-#         )
-#         db_query_response = db_query.execute()
-
-#         news_items = []
-#         if db_query_response.data:
-#             news_items = [NewsItemSchema(**item) for item in db_query_response.data]
-
-#         if len(news_items) > 0:
-#             item = news_items[0]
-#             if item.article_text:
-#                 categories = [
-#                     "Government Updates regarding Legal & Financing Implications",
-#                     "Company Updates regarding Products & Programs Offered",
-#                     "Locality Updates regarding Construction & Community Considerations",
-#                     "Other Updates regarding Middle Housing Financing in Canada",
-#                 ]
-#                 generated_category = openai_service.assign_category(
-#                     item.article_text, categories
-#                 )
-#                 item.generated_category = generated_category
-#                 database_service.update_news_item(item.id, item)
-#                 return jsonify(item), 200
-
-#         return jsonify({"error": "Article not found or no text available."}), 404
-#     except Exception as e:
-#         return jsonify({"error": f"An error occurred: {str(e)}"}), 500
-
-
-@api_routes.route("/assign-categories", methods=["POST"])
-def assign_categories():
-    db_query = database_service.query_select_news_items_from_db(
-        filters={"generated_category": "null"},
-        not_null_fields=["article_text"],
-    )
-    db_query_response = db_query.execute()
-
-    news_items = []
-    if db_query_response.data:
-        news_items = [NewsItemSchema(**item) for item in db_query_response.data]
-
-    inserted_items = []
-
-    if len(news_items) > 0:
-
-        categories = [
-            "Government Updates regarding Legal & Financing Implications",
-            "Company Updates regarding Products & Programs Offered",
-            "Locality Updates regarding Construction & Community Considerations",
-            "Other Updates regarding Middle Housing Financing in Canada",
-        ]
-
-        for item in news_items:
-            if item.article_text:
-                # inserted_items.append(f"item id {item.id} has text")  # DEBUG
-                generated_category = openai_service.assign_category(
-                    item.article_text, categories
-                )
-                item.generated_category = generated_category
-                database_service.update_news_item(item.id, item)
-                inserted_items.append(item)
-
-    return jsonify(inserted_items)
-
-
-@api_routes.route("/generate-summaries", methods=["POST"])
-def generate_summaries():
-    db_query = database_service.query_select_news_items_from_db(
-        filters={"generated_summary": "null"},
-        not_null_fields=["article_text"],
-    )
-    db_query_response = db_query.execute()
-
-    news_items = []
-    if db_query_response.data:
-        news_items = [NewsItemSchema(**item) for item in db_query_response.data]
-
-    inserted_items = []
-
-    if len(news_items) > 0:
-        for item in news_items:
-            if item.article_text:
-                generated_summary = openai_service.generate_summary(item.article_text)
-                item.generated_summary = generated_summary
-                database_service.update_news_item(item.id, item)
-                inserted_items.append(item)
-
-    return jsonify(inserted_items)
+    try:
+        articles = await news_item_service.scrape_articles()
+        return (
+            jsonify(
+                {
+                    "message": "Articles with the following IDs have been scraped and updated in the database.",
+                    "data": articles,
+                }
+            ),
+            200,
+        )
+    except Exception as e:
+        return jsonify({"error": f"An error occurred: {str(e)}"}), 500
 
 
 @api_routes.route("/remove_article/<int:article_id>", methods=["POST"])

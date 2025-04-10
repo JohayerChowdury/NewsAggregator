@@ -43,6 +43,20 @@ class SupabaseDBService:
     def __init__(self, supabase_url: str, supabase_key: str):
         self.supabase_client: Client = create_client(supabase_url, supabase_key)
 
+    @staticmethod
+    def paginate_query(
+        query: SyncSelectRequestBuilder,
+        page: int = 1,
+        per_page: int = 20,
+    ):
+        """
+        Paginate the query results.
+        """
+        startIndex = (page - 1) * per_page
+        endIndex = startIndex + per_page - 1
+
+        return query.range(startIndex, endIndex)
+
     # READ METHODS
     def query_ALL_news_items_from_db(self):
         """
@@ -58,7 +72,7 @@ class SupabaseDBService:
         self,
         filters: dict = None,
         not_null_fields: List[str] = None,
-        sort: dict = None,
+        sort: dict[str:str] = None,
     ):
         query = self.query_ALL_news_items_from_db()
 
@@ -77,24 +91,17 @@ class SupabaseDBService:
 
         # Apply sorting
         if sort:
-            for column, desc in sort.items():
-                query = query.order(column, desc=desc)
+            for column, value in sort.items():
+                if value == "asc":
+                    query = query.order(column, desc=False)
+                elif value == "desc":
+                    query = query.order(column, desc=True)
+                else:
+                    raise ValueError(
+                        f"Invalid sort direction, needs to be 'asc' or 'desc': {value}"
+                    )
 
         return query
-
-    @staticmethod
-    def paginate_query(
-        query: SyncSelectRequestBuilder,
-        page: int = 1,
-        per_page: int = 20,
-    ):
-        """
-        Paginate the query results.
-        """
-        startIndex = (page - 1) * per_page
-        endIndex = startIndex + per_page - 1
-
-        return query.range(startIndex, endIndex)
 
     def fetch_news_items_by_id(self, id: int) -> Optional[dict]:
         """
@@ -108,6 +115,17 @@ class SupabaseDBService:
         )
         return response.data[0] if response.data else None
 
+    def fetch_news_items_by_data_URL(self, data_URL: str) -> PostgrestAPIResponse:
+        """
+        Fetch a news item by its data_URL from the database.
+        """
+        return (
+            self.supabase_client.table(self.NEWS_ITEMS_TABLE)
+            .select("*")
+            .eq("data_URL", data_URL)
+            .execute()
+        )
+
     def fetch_unique_sources(self) -> List[str]:
         response = self.NEWS_ITEMS_TABLE.select("extracted_news_source").execute()
         return list(set(item["extracted_news_source"] for item in response.data))
@@ -119,7 +137,7 @@ class SupabaseDBService:
         """
         try:
             # Serialize the news item, excluding unset fields (like id)
-            serialized_item = news_item.model_dump(exclude_unset=True)
+            serialized_item = news_item.get_json()
 
             response: PostgrestAPIResponse = (
                 self.supabase_client.table(self.NEWS_ITEMS_TABLE)
@@ -145,13 +163,13 @@ class SupabaseDBService:
             )
 
     # UPDATE METHODS
-    def update_news_item(self, id, news_item: NewsItemSchema) -> Optional[dict]:
+    def update_news_item(self, id, news_item: NewsItemSchema) -> DatabaseResponse:
         """
         Update a news item in the database.
         """
         try:
             # Ensure the news item is serialized to match the database schema
-            serialized_item = news_item.model_dump()
+            serialized_item = news_item.get_json()
 
             response: PostgrestAPIResponse = (
                 self.supabase_client.table(self.NEWS_ITEMS_TABLE)
@@ -159,12 +177,22 @@ class SupabaseDBService:
                 .eq("id", id)
                 .execute()
             )
-
-            return response.data[0] if response.data else None
+            if response.data:
+                return DatabaseResponse(
+                    status=DatabaseResponseStatusType.SUCCESS,
+                    data=NewsItemSchema(**response.data[0]),
+                )
+            else:
+                return DatabaseResponse(
+                    status=DatabaseResponseStatusType.FAILURE,
+                    message="No data inserted in the database.",
+                )
 
         except Exception as e:
-            print(f"Error updating news item: {e}")
-            return None
+            return DatabaseResponse(
+                status=DatabaseResponseStatusType.ERROR,
+                message=f"Error inserting in database: {e}",
+            )
 
     def update_news_item_removed_from_display(
         self, id: int, is_removed_from_display: bool
@@ -183,150 +211,6 @@ class SupabaseDBService:
         except Exception as e:
             print(f"Error updating is_removed_from_display: {e}")
             return None
-
-    def update_news_item_extracted_url(
-        self, id: int, extracted_url: str
-    ) -> Optional[dict]:
-        """
-        Update the extracted_URL field in the database.
-        """
-        try:
-            response: PostgrestAPIResponse = (
-                self.supabase_client.table(self.NEWS_ITEMS_TABLE)
-                .update({"extracted_URL": extracted_url})
-                .eq("id", id)
-                .execute()
-            )
-            return response.data[0] if response.data else None
-        except Exception as e:
-            print(f"Error updating extracted_URL: {e}")
-            return None
-
-    # def update_extracted_date_published(
-    #     self, id: int, date_published: str
-    # ) -> Optional[dict]:
-    #     """
-    #     Update the extracted_date_published field in the database.
-    #     """
-    #     try:
-    #         response: PostgrestAPIResponse = (
-    #             self.supabase_client.table(self.NEWS_ITEMS_TABLE)
-    #             .update({"extracted_date_published": date_published})
-    #             .eq("id", id)
-    #             .execute()
-    #         )
-    #         return response.data[0] if response.data else None
-    #     except Exception as e:
-    #         print(f"Error updating extracted_date_published: {e}")
-    #         return None
-
-    # def update_extracted_title(self, id: int, title: str) -> Optional[dict]:
-    #     """
-    #     Update the extracted_title field in the database.
-    #     """
-    #     try:
-    #         response: PostgrestAPIResponse = (
-    #             self.supabase_client.table(self.NEWS_ITEMS_TABLE)
-    #             .update({"extracted_title": title})
-    #             .eq("id", id)
-    #             .execute()
-    #         )
-    #         return response.data[0] if response.data else None
-    #     except Exception as e:
-    #         print(f"Error updating extracted_title: {e}")
-    #         return None
-
-    # def update_extracted_news_source(self, id: int, news_source: str) -> Optional[dict]:
-    #     """
-    #     Update the extracted_news_source field in the database.
-    #     """
-    #     try:
-    #         response: PostgrestAPIResponse = (
-    #             self.supabase_client.table(self.NEWS_ITEMS_TABLE)
-    #             .update({"extracted_news_source": news_source})
-    #             .eq("id", id)
-    #             .execute()
-    #         )
-    #         return response.data[0] if response.data else None
-    #     except Exception as e:
-    #         print(f"Error updating extracted_news_source: {e}")
-    #         return None
-
-    # def update_extracted_author(self, id: int, author: str) -> Optional[dict]:
-    #     """
-    #     Update the extracted_author field in the database.
-    #     """
-    #     try:
-    #         response: PostgrestAPIResponse = (
-    #             self.supabase_client.table(self.NEWS_ITEMS_TABLE)
-    #             .update({"extracted_author": author})
-    #             .eq("id", id)
-    #             .execute()
-    #         )
-    #         return response.data[0] if response.data else None
-    #     except Exception as e:
-    #         print(f"Error updating extracted_author: {e}")
-    #         return None
-
-    # def update_article_text(self, id: int, text: str) -> Optional[dict]:
-    #     """
-    #     Update the article_text field in the database.
-    #     """
-    #     try:
-    #         response: PostgrestAPIResponse = (
-    #             self.supabase_client.table(self.NEWS_ITEMS_TABLE)
-    #             .update({"article_text": text})
-    #             .eq("id", id)
-    #             .execute()
-    #         )
-    #         return response.data[0] if response.data else None
-    #     except Exception as e:
-    #         print(f"Error updating article_text: {e}")
-    #         return None
-
-    # def update_extracted_summary(self, id: int, summary: str) -> Optional[dict]:
-    #     """
-    #     Update the extracted_summary field in the database.
-    #     """
-    #     try:
-    #         response: PostgrestAPIResponse = (
-    #             self.supabase_client.table(self.NEWS_ITEMS_TABLE)
-    #             .update({"extracted_summary": summary})
-    #             .eq("id", id)
-    #             .execute()
-    #         )
-    #         return response.data[0] if response.data else None
-    #     except Exception as e:
-    #         print(f"Error updating extracted_summary: {e}")
-    #         return None
-
-    # def update_generated_summary(self, id: int, summary: str) -> Optional[dict]:
-    #     """Update the generated_summary field in the database."""
-    #     try:
-    #         response: PostgrestAPIResponse = (
-    #             self.supabase_client.table(self.NEWS_ITEMS_TABLE)
-    #             .update({"generated_summary": summary})
-    #             .eq("id", id)
-    #             .execute()
-    #         )
-    #         return response.data[0] if response.data else None
-    #     except Exception as e:
-    #         print(f"Error updating generated_summary: {e}")
-    #         return None
-
-    # def update_generated_category(self, id: int, category: str) -> Optional[dict]:
-    #     """Update the generated_category field in the database."""
-    #     try:
-    #         response: PostgrestAPIResponse = (
-    #             self.supabase_client.table(self.NEWS_ITEMS_TABLE)
-    #             .update({"generated_category": category})
-    #             .eq("id", id)
-    #             .execute()
-    #         )
-    #         return response.data[0] if response.data else None
-    #     except Exception as e:
-    #         print(f"Error updating generated_category: {e}")
-    #         return None
 
     # DELETE METHODS
     def delete_news_item(self, id: int) -> Optional[dict]:

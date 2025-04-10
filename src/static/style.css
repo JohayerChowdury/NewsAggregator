@@ -93,6 +93,7 @@ button:hover {
 
 button:disabled {
   pointer-events: none;
+  background-color: #ccc;
 }
 
 button.delete-btn {

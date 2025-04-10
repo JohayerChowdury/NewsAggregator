@@ -9,6 +9,7 @@ from .services.database_service import SupabaseDBService
 from .services.auth_service import SupabaseAuthService
 from .services.openai_service import OpenAIService
 from .services.scrapers.crawl4ai_scraper import Crawl4AIScraper
+from .services.news_item_service import NewsItemService
 
 load_dotenv()  # Load environment variables from .env file
 
@@ -23,6 +24,9 @@ openai_service: OpenAIService = None
 
 # Crawl4AI scraper instance
 scraper: Crawl4AIScraper = None
+
+# NewsItem service instance
+news_item_service: NewsItemService = None
 
 # calling dev config
 config = Config().dev_config
@@ -52,6 +56,10 @@ def create_app():
     # Initialize OpenAI service
     global openai_service
     openai_service = OpenAIService()
+
+    # Initialize NewsItem service
+    global news_item_service
+    news_item_service = NewsItemService(database_service, scraper, openai_service)
 
     # Register blueprints
     from .routes import client_routes, api_routes

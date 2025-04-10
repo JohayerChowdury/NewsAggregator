@@ -1,14 +1,19 @@
 import os
 from dotenv import load_dotenv
+import json
 from pydantic import BaseModel
 
 from crawl4ai import (
+    BrowserConfig,
+    CrawlerRunConfig,
     AsyncWebCrawler,
+    CrawlResult,
     CacheMode,
     LLMExtractionStrategy,
     LLMConfig,
+    PruningContentFilter,
+    DefaultMarkdownGenerator,
 )
-from crawl4ai.async_configs import BrowserConfig, CrawlerRunConfig
 
 # imports for the patch
 from crawl4ai.async_crawler_strategy import AsyncPlaywrightCrawlerStrategy
@@ -41,6 +46,9 @@ class Crawl4AIScraper:
             self._apply_patch()
             Crawl4AIScraper._patch_applied = True
 
+        self.filter = PruningContentFilter(
+            threshold=0.5, threshold_type="dynamic", min_word_threshold=5
+        )
         self.llm_config_provider = (
             "ollama/llama3.2:latest" if not self.openai_api_key else "openai/gpt-4o"
         )
@@ -71,6 +79,7 @@ class Crawl4AIScraper:
             # magic=True,
             page_timeout=20000,  # in ms
             # extraction_strategy=self.extraction_strategy,
+            markdown_generator=DefaultMarkdownGenerator(content_filter=self.filter),
         )
 
     # TODO: when fix is released, upgrade crawl4ai (https://github.com/unclecode/crawl4ai/pull/899) and remove this patch
@@ -100,18 +109,48 @@ class Crawl4AIScraper:
             patched_async_playwright__crawler_strategy_close
         )
 
+    def _handle_result(self, result: CrawlResult):
+        """
+        Handle the result of the crawl.
+        """
+        if not result.success:
+            print(f"Crawl error: {result.error_message}")
+            return
+
+        # Basic info
+        print("Crawled URL:", result.url)
+        print("Status code:", result.status_code)
+
+        # HTML
+        print("Cleaned HTML size:", len(result.cleaned_html or ""))
+
+        # Markdown output
+        if result.markdown:
+            print("Raw Markdown length:", len(result.markdown.raw_markdown))
+            print("Fit Markdown length:", len(result.markdown.fit_markdown))
+
+        if result.extracted_content:
+            data = json.loads(result.extracted_content)
+            print("Extracted content:", data)
+            # return data
+
+        return result
+
     async def scrape_url(self, url):
         """
         Process a single URL asynchronously.
         """
         async with AsyncWebCrawler(config=self.browser_config) as crawler:
             try:
-                result = await crawler.arun(url=url, config=self.run_config)
-                if result.success:
-                    return result.markdown
+                result = self._handle_result(
+                    await crawler.arun(url=url, config=self.run_config)
+                )
+                if result:
+                    return result
                 else:
-                    print(f"Error crawling {url}: {result.error_message}")
-                    return None
+                    print(f"Failed to extract data from {url}")
+
             except Exception as e:
                 print(f"Exception while processing {url}: {e}")
-                return None
+
+            return None
