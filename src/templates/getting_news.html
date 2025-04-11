@@ -5,7 +5,7 @@
 {% block content %}
 <div class="container" style="display: flex; flex-direction: column; gap: 20px">
   <div>
-    <h1>Crawl for New Articles</h1>
+    <h1>Step 1: Crawl for New Articles</h1>
     <p>
       Click the button below to start crawling google news and rss feeds for new articles and saving
       unique ones to the database (to avoid deduplication).
@@ -14,7 +14,7 @@
     <p id="crawl-status"></p>
   </div>
   <div>
-    <h1>Scrape Online Text of Articles</h1>
+    <h1>Step 2: Scrape Online Text of Articles</h1>
     <p>
       Click the button below to start retrieving online text from articles that have not been
       scraped. This step is necessary to get the full text of the articles.
@@ -23,16 +23,15 @@
     <p id="scrape-status"></p>
   </div>
   <div>
-    <h1>Generate Categories of Articles with AI</h1>
+    <h1>Step 3: Generate Content for Articles</h1>
+    <h2>Generate Categories of Articles with AI</h2>
     <p>
       Click the button below to start generating content for articles, with provided online text,
       using local LLM / OpenAI (with provided OPENAI_API_KEY).
     </p>
     <button id="generate-categories-button" class="btn btn-primary">Generate Categories</button>
     <p id="generate-categories-status"></p>
-  </div>
-  <div>
-    <h1>Generate Summaries of Articles with AI</h1>
+    <h2>Generate Summaries of Articles with AI</h2>
     <p>
       Click the button below to start generating content for articles, with provided online text,
       using local LLM / OpenAI (with provided OPENAI_API_KEY).

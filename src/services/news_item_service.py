@@ -72,6 +72,10 @@ class NewsItemService:
                     return int(insert_response.data.id)
                 else:
                     print(f"Database Insert Failed: {insert_response.message}")
+            else:
+                print(
+                    f"Article already exists in the database with ID {fetched_news_item_response.data[0]['id']}"
+                )
         except Exception as e:
             print(f"Error processing article: {e}")
         return None
@@ -289,7 +293,7 @@ class NewsItemService:
         """
         db_query = self.database_service.query_select_news_items_from_db(
             not_null_fields=["crawl4ai_result"],
-            filters={"generated_summary": "null"},
+            filters={"is_removed_from_display": False, "generated_summary": "null"},
         )
         db_query_response = db_query.execute()
 
@@ -311,7 +315,7 @@ class NewsItemService:
         """
         db_query = self.database_service.query_select_news_items_from_db(
             not_null_fields=["crawl4ai_result"],
-            filters={"generated_category": "null"},
+            filters={"is_removed_from_display": False, "generated_category": "null"},
         )
         db_query_response = db_query.execute()
 
@@ -332,7 +336,10 @@ class NewsItemService:
         Download articles marked as 'is_selected_for_download' into a CSV file.
         """
         db_query = self.database_service.query_select_news_items_from_db(
-            filters={"is_selected_for_download": True}
+            filters={
+                "is_selected_for_download": True,
+                "is_removed_from_display": False,
+            }
         )
         db_query_response = db_query.execute()
 
