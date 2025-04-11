@@ -21,9 +21,9 @@ GOOGLE_NEWS_SEARCH_QUERIES = [
     "middle housing",
     "accessory dwelling units",
     "multiplex conversions",
-    "corporate programs tied to housing",
-    "government programs tied to housing",
-    "government regulations on housing",
+    "programs offered for middle housing",
+    "products offered for middle housing",
+    "government regulations on middle housing",
     # "mortgage regulations",
     # "zoning bylaws",
 ]
@@ -43,4 +43,5 @@ def search_news(base_query, location, from_=None, to_=None):
 
     combined_query = f"{base_query} in {location}"
     result = gn.search(combined_query, from_=from_, to_=to_)
+    print(f"Found {len(result['entries'])} articles for query: {combined_query}")
     return result["entries"]

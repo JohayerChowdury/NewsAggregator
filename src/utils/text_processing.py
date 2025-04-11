@@ -83,8 +83,8 @@ def clean_and_normalize_text(text):
     # Replace non-breaking spaces (&nbsp;) with regular spaces
     text = text.replace("&nbsp;", " ")
 
-    # Normalize whitespace and fix encoding
-    text = " ".join(text.split()).strip()
+    # # Normalize whitespace and fix encoding
+    # text = " ".join(text.split()).strip()
 
     return text
 
@@ -97,7 +97,6 @@ def normalize_html_content(raw_html):
     # Clean and normalize text for human-readable display
     text = clean_and_normalize_text(text)
 
-    # Optionally filter text for LLM/AI generation
     text = filter_text_for_llm(text)
 
     return text

@@ -45,7 +45,11 @@
     <div class="article-section">
       <p class="article-description">Summary: {{ newsItem.get_article_summary() }}</p>
       <p class="article-category">Category: {{ newsItem.get_category() or "Uncategorized" }}</p>
-      <p class="article-text">Text: {{ newsItem.get_article_text() }}</p>
+      {% if not newsItem.get_article_text() %}
+      <p style="color: red">
+        This article was not scraped to retrieve its text and thus, a category was not generated.
+      </p>
+      {% endif %}
     </div>
   </article>
   {% endfor %}

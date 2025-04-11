@@ -23,20 +23,58 @@
     <p id="scrape-status"></p>
   </div>
   <div>
-    <h1>Generate Content for Articles with AI</h1>
+    <h1>Generate Categories of Articles with AI</h1>
     <p>
       Click the button below to start generating content for articles, with provided online text,
       using local LLM / OpenAI (with provided OPENAI_API_KEY).
     </p>
-    <button id="generate-button" class="btn btn-primary">Generate Content</button>
-    <p id="generate-status"></p>
+    <button id="generate-categories-button" class="btn btn-primary">Generate Categories</button>
+    <p id="generate-categories-status"></p>
+  </div>
+  <div>
+    <h1>Generate Summaries of Articles with AI</h1>
+    <p>
+      Click the button below to start generating content for articles, with provided online text,
+      using local LLM / OpenAI (with provided OPENAI_API_KEY).
+    </p>
+    <button id="generate-summaries-button" class="btn btn-primary">Generate Summaries</button>
+    <p id="generate-summaries-status"></p>
   </div>
 </div>
 <script>
   const crawlNewsButton = document.getElementById("crawl-button");
-  const statusElement = document.getElementById("crawl-status");
+  const scrapeArticlesButton = document.getElementById("scrape-button");
+  const generateCategoriesButton = document.getElementById("generate-categories-button");
+  const generateSummariesButton = document.getElementById("generate-summaries-button");
+  const buttons = [
+    crawlNewsButton,
+    scrapeArticlesButton,
+    generateCategoriesButton,
+    generateSummariesButton,
+  ];
+  let isOperationInProgress = false;
+
+  function toggleButtons(disabled) {
+    buttons.forEach((button) => {
+      button.disabled = disabled;
+    });
+  }
+
+  function setOperationInProgress(inProgress) {
+    isOperationInProgress = inProgress;
+    toggleButtons(inProgress);
+  }
+
+  window.addEventListener("beforeunload", function (event) {
+    if (isOperationInProgress) {
+      event.preventDefault();
+      event.returnValue = "An operation is still in progress. Please wait until it is completed.";
+    }
+  });
 
   crawlNewsButton.addEventListener("click", async function () {
+    setOperationInProgress(true);
+    const statusElement = document.getElementById("crawl-status");
     statusElement.innerText = "Crawling for new articles. Adding them to the database...";
     const response = await fetch("{{ url_for('api_routes.crawl_for_news') }}", {
       method: "GET",
@@ -45,11 +83,12 @@
     if (response.ok) {
       statusElement.innerHTML = `Crawling completed. <a href="{{ url_for('client_routes.news_items_on_display') }}">View the new articles added.</a>`;
     }
+    setOperationInProgress(false);
   });
 
-  const scrapeArticlesButton = document.getElementById("scrape-button");
-  const scrapeStatusElement = document.getElementById("scrape-status");
   scrapeArticlesButton.addEventListener("click", async function () {
+    setOperationInProgress(true);
+    const scrapeStatusElement = document.getElementById("scrape-status");
     scrapeStatusElement.innerText = "Scraping articles. Updating the database...";
     const response = await fetch("{{ url_for('api_routes.scrape_articles') }}", {
       method: "GET",
@@ -58,19 +97,35 @@
     if (response.ok) {
       scrapeStatusElement.innerHTML = `Scraping completed. <a href="{{ url_for('client_routes.news_items_on_display') }}">View the updated articles.</a>`;
     }
+    setOperationInProgress(false);
   });
 
-  const generateArticlesButton = document.getElementById("generate-button");
-  const generateStatusElement = document.getElementById("generate-status");
-  generateArticlesButton.addEventListener("click", async function () {
+  generateCategoriesButton.addEventListener("click", async function () {
+    setOperationInProgress(true);
+    const generateStatusElement = document.getElementById("generate-categories-status");
     generateStatusElement.innerText = "Generating content for articles. Updating the database...";
-    const response = await fetch("{{ url_for('api_routes.generate_content') }}", {
+    const response = await fetch("{{ url_for('api_routes.generate_categories') }}", {
       method: "GET",
     });
 
     if (response.ok) {
       generateStatusElement.innerHTML = `Content generation completed. <a href="{{ url_for('client_routes.news_items_on_display') }}">View the updated articles.</a>`;
     }
+    setOperationInProgress(false);
+  });
+
+  generateSummariesButton.addEventListener("click", async function () {
+    setOperationInProgress(true);
+    const generateStatusElement = document.getElementById("generate-summaries-status");
+    generateStatusElement.innerText = "Generating content for articles. Updating the database...";
+    const response = await fetch("{{ url_for('api_routes.generate_summaries') }}", {
+      method: "GET",
+    });
+
+    if (response.ok) {
+      generateStatusElement.innerHTML = `Content generation completed. <a href="{{ url_for('client_routes.news_items_on_display') }}">View the updated articles.</a>`;
+    }
+    setOperationInProgress(false);
   });
 </script>
 {% endblock %}

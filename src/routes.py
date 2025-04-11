@@ -20,18 +20,19 @@ client_routes = Blueprint("client_routes", __name__)
 api_routes = Blueprint("api_routes", __name__, url_prefix="/api")
 
 
-# def auth_required(f):
-#     """
-#     Decorator to require authentication for a route.
-#     """
+# TODO: Add authentication service and implement auth_service.login_user() and auth_service.logout_user()
+def auth_required(f):
+    """
+    Decorator to require authentication for a route.
+    """
 
-#     @wraps(f)
-#     def decorated_function(*args, **kwargs):
-#         if "user" not in session:
-#             return redirect(url_for("client_routes.home"))
-#         return f(*args, **kwargs)
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if "user" not in session:
+            return redirect(url_for("client_routes.home"))
+        return f(*args, **kwargs)
 
-#     return decorated_function
+    return decorated_function
 
 
 @client_routes.route("/", methods=["GET"])
@@ -162,13 +163,33 @@ async def scrape_articles():
         return jsonify({"error": f"An error occurred: {str(e)}"}), 500
 
 
-@api_routes.route("/generate-content", methods=["GET"])
-async def generate_content():
+@api_routes.route("/generate-categories", methods=["GET"])
+async def generate_categories():
     """
     Endpoint to generate content for articles that require it.
     """
     try:
-        articles = await news_item_service.summarize_and_categorize_articles()
+        articles = await news_item_service.categorize_articles()
+        return (
+            jsonify(
+                {
+                    "message": "Content for articles with the following IDs have been generated and updated in the database.",
+                    "data": articles,
+                }
+            ),
+            200,
+        )
+    except Exception as e:
+        return jsonify({"error": f"An error occurred: {str(e)}"}), 500
+
+
+@api_routes.route("/generate-summaries", methods=["GET"])
+async def generate_summaries():
+    """
+    Endpoint to generate content for articles that require it.
+    """
+    try:
+        articles = await news_item_service.summarize_articles()
         return (
             jsonify(
                 {
@@ -232,5 +253,19 @@ def toggle_select_for_download(article_id: int):
                 jsonify({"error": "Article not found or could not be updated."}),
                 404,
             )
+    except Exception as e:
+        return jsonify({"error": f"An error occurred: {str(e)}"}), 500
+
+
+@api_routes.route("/download-articles", methods=["GET"])
+def download_articles():
+    """
+    Endpoint to download articles that are selected for download.
+    """
+    try:
+        articles = news_item_service.download_selected_articles_as_csv(
+            "selected_articles.csv"
+        )
+        return jsonify({"message": "Articles downloaded successfully."}), 200
     except Exception as e:
         return jsonify({"error": f"An error occurred: {str(e)}"}), 500

@@ -11,15 +11,34 @@
 <!-- pagination block -->
 {% include 'news_items/pagination.html' %}
 
-<!-- <div class="container">
+<div class="container">
   <button id="download-csv-select">Download Selected Articles as CSV</button>
-</div> -->
+</div>
 
 <!-- articles block -->
 {% include 'news_items/list.html' %}
 
 <!-- pagination block -->
 {% include 'news_items/pagination.html' %}
+
+<script>
+  document.getElementById("download-csv-select").addEventListener("click", async () => {
+    try {
+      const response = await fetch("/api/download-articles", {
+        method: "GET",
+      });
+
+      if (response.ok) {
+        alert("CSV downloaded successfully!");
+      } else {
+        alert("Failed to download CSV. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error downloading CSV:", error);
+      alert("An error occurred while downloading the CSV.");
+    }
+  });
+</script>
 
 <!-- content end block -->
 {% endblock %}

@@ -136,7 +136,8 @@ class NewsItemSchema(BaseModel):
             return normalize_html_content(
                 self.crawl4ai_result.get("fit_html", "cleaned_html")
             )
-        return "This article was not scraped to retrieve its text."
+        # return "This article was not scraped to retrieve its text."
+        return None
 
     def get_category(self):
         if self.generated_category:

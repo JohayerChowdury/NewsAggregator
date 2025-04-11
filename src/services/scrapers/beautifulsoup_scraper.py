@@ -64,5 +64,4 @@ def extract_clean_article(
         if not exclude:
             clean_paragraphs.append(p.get_text(strip=True))
 
-    # TODO: Add more sophisticated cleaning logic if needed
     return str("\n".join(clean_paragraphs))
