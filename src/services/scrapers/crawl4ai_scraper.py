@@ -19,7 +19,6 @@ from crawl4ai import (
 from crawl4ai.async_crawler_strategy import AsyncPlaywrightCrawlerStrategy
 from crawl4ai.browser_manager import BrowserManager
 
-
 load_dotenv()  # Load environment variables from .env file
 
 
@@ -68,15 +67,18 @@ class Crawl4AIScraper:
         )
         self.run_config = CrawlerRunConfig(
             word_count_threshold=20,  # content threshold; minimum words per block
-            # tag exclusions
-            excluded_tags=["nav", "footer", "header", "form", "img", "a"],
-            # link filtering
-            exclude_social_media_links=True,
+            excluded_tags=[
+                "nav",
+                "footer",
+                "header",
+                "form",
+                "img",
+                "a",
+            ],  # tag exclusions
+            exclude_social_media_links=True,  # link filtering
             exclude_external_links=True,
             remove_overlay_elements=True,
             cache_mode=CacheMode.BYPASS,
-            # user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36", # unneeded if magic=True
-            # magic=True,
             page_timeout=20000,  # in ms
             # extraction_strategy=self.extraction_strategy,
             markdown_generator=DefaultMarkdownGenerator(content_filter=self.filter),
@@ -132,7 +134,6 @@ class Crawl4AIScraper:
         if result.extracted_content:
             data = json.loads(result.extracted_content)
             print("Extracted content:", data)
-            # return data
 
         return result
 

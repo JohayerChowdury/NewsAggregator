@@ -2,6 +2,30 @@
 <div class="container">
   {% for newsItem in news_items %}
   <article>
+    <div style="margin-bottom: 20px">
+      <label for="selected-for-download-{{ newsItem.id }}">Is Selected for Download</label>
+      <input
+        type="checkbox"
+        id="selected-for-download-{{ newsItem.id }}"
+        data-id="{{ newsItem.id }}"
+        {%
+        if
+        newsItem.is_selected_for_download
+        %}
+        checked
+        {%
+        endif
+        %}
+        {%
+        if
+        not
+        show_actions_button
+        %}
+        disabled
+        {%
+        endif
+        %} />
+    </div>
     <h2>
       <a href="{{ newsItem.get_online_url() }}" target="_blank"> {{ newsItem.get_title() }} </a>
     </h2>
@@ -13,32 +37,41 @@
         <p>Author: {{ newsItem.extracted_author or newsItem.data_json.author or 'Unknown' }}</p>
       </div>
     </div>
+    {% if show_actions_button %}
     <div class="article-section">
-      <p class="article-category">Category: {{ newsItem.get_category() or "Uncategorized" }}</p>
-      <p class="article-text">Description: {{ newsItem.get_article_text() }}</p>
+      <button class="delete-btn" data-id="{{ newsItem.id }}">Remove from Display</button>
     </div>
+    {% endif %}
     <div class="article-section">
-      {% if show_remove_article_button %}
-      <div class="delete-article">
-        <button class="delete-btn" data-id="{{ newsItem.id }}">Remove from Display</button>
-      </div>
-      {% endif %}
+      <p class="article-description">Summary: {{ newsItem.get_article_summary() }}</p>
+      <p class="article-category">Category: {{ newsItem.get_category() or "Uncategorized" }}</p>
+      <p class="article-text">Text: {{ newsItem.get_article_text() }}</p>
     </div>
   </article>
   {% endfor %}
 </div>
 <script>
-  document.querySelectorAll(".toggle-display").forEach((checkbox) => {
-    checkbox.addEventListener("change", (event) => {
-      const articleId = event.target.dataset.id;
-      const isSelected = event.target.checked;
-      fetch(`/api/toggle_display/${articleId}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ selected: isSelected }),
+  document
+    .querySelectorAll("input[type='checkbox'][id^='selected-for-download-']")
+    .forEach((checkbox) => {
+      checkbox.addEventListener("change", (event) => {
+        const articleId = event.target.dataset.id;
+        const isSelected = event.target.checked;
+        fetch(`/api/toggle_select_for_download/${articleId}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ is_selected_for_download: isSelected }),
+        })
+          .then((response) => {
+            if (!response.ok) {
+              alert("Failed to update 'Select for Download' status.");
+            }
+          })
+          .catch(() => alert("An error occurred while updating the 'Select for Download' status."));
       });
     });
-  });
 
   document.querySelectorAll(".delete-btn").forEach((button) => {
     button.addEventListener("click", (event) => {
@@ -55,15 +88,11 @@
               alert("Article removed from display successfully.");
               location.reload();
             } else {
-              alert("Failed to delete the article.");
+              alert("Failed to remove the article from display.");
             }
           })
           .catch(() => alert("An error occurred while deleting the article."));
       }
     });
-  });
-
-  document.getElementById("download-csv").addEventListener("click", () => {
-    window.location.href = "/api/download_csv";
   });
 </script>

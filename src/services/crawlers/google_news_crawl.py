@@ -2,20 +2,17 @@ from pygooglenews import GoogleNews
 from ...utils import get_news_search_dates
 
 CANADIAN_LOCATIONS = [
-    # "Canada",
+    "Canada",
     "Ontario",
     # "Quebec",
     # "Alberta",
-    # "British Columbia",
+    "British Columbia",
     # "Manitoba",
     # "Saskatchewan",
     # "New Brunswick",
     # "Nova Scotia",
     # "Prince Edward Island",
     # "Newfoundland and Labrador",
-    # "Yukon",
-    # "Northwest Territories",
-    # "Nunavut",
 ]
 
 # NOTE: Add search queries as you would here: https://news.google.com/home?hl=en-CA&gl=CA&ceid=CA:en
@@ -23,10 +20,10 @@ CANADIAN_LOCATIONS = [
 GOOGLE_NEWS_SEARCH_QUERIES = [
     "middle housing",
     "accessory dwelling units",
-    # "multiplex conversions",
-    # "corporate programs tied to housing",
-    # "government programs tied to housing",
-    # "government regulations on housing",
+    "multiplex conversions",
+    "corporate programs tied to housing",
+    "government programs tied to housing",
+    "government regulations on housing",
     # "mortgage regulations",
     # "zoning bylaws",
 ]

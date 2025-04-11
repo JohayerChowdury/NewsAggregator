@@ -32,8 +32,8 @@
 
   crawlNewsButton.addEventListener("click", async function () {
     statusElement.innerText = "Crawling for new articles. Adding them to the database...";
-    const response = await fetch("{{ url_for('api_routes.news') }}", {
-      method: "POST",
+    const response = await fetch("{{ url_for('api_routes.crawl_for_news') }}", {
+      method: "GET",
     });
 
     if (response.ok) {
@@ -46,7 +46,7 @@
   scrapeArticlesButton.addEventListener("click", async function () {
     scrapeStatusElement.innerText = "Scraping articles. Updating the database...";
     const response = await fetch("{{ url_for('api_routes.scrape_articles') }}", {
-      method: "POST",
+      method: "GET",
     });
 
     if (response.ok) {
@@ -59,7 +59,7 @@
   generateArticlesButton.addEventListener("click", async function () {
     generateStatusElement.innerText = "Generating content for articles. Updating the database...";
     const response = await fetch("{{ url_for('api_routes.generate_content') }}", {
-      method: "POST",
+      method: "GET",
     });
 
     if (response.ok) {

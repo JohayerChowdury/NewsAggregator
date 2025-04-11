@@ -10,30 +10,28 @@ from flask import (
 from functools import wraps
 from .app import (
     database_service,
-    auth_service,
+    # auth_service,
     news_item_service,
 )
 from .models import NewsItemSchema
-
-# from .utils import clean_and_normalize_text
 
 # Blueprints
 client_routes = Blueprint("client_routes", __name__)
 api_routes = Blueprint("api_routes", __name__, url_prefix="/api")
 
 
-def auth_required(f):
-    """
-    Decorator to require authentication for a route.
-    """
+# def auth_required(f):
+#     """
+#     Decorator to require authentication for a route.
+#     """
 
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if "user" not in session:
-            return redirect(url_for("client_routes.home"))
-        return f(*args, **kwargs)
+#     @wraps(f)
+#     def decorated_function(*args, **kwargs):
+#         if "user" not in session:
+#             return redirect(url_for("client_routes.home"))
+#         return f(*args, **kwargs)
 
-    return decorated_function
+#     return decorated_function
 
 
 @client_routes.route("/", methods=["GET"])
@@ -86,12 +84,12 @@ def news_items_on_display():
             "client_routes.news_items_on_display", page=page
         ),
         title="News Items on Display",
-        show_remove_article_button=True,
+        show_actions_button=True,
     )
 
 
-@client_routes.route("/news-items", methods=["GET"])
-def news_items():
+@client_routes.route("/all-news-items", methods=["GET"])
+def all_news_items():
     page = request.args.get("page", 1, type=int)
     per_page = 15
 
@@ -122,14 +120,14 @@ def news_items():
         page=page,
         total_count=total_count,
         total_pages=total_pages,
-        pagination_url=lambda page: url_for("client_routes.news_items", page=page),
+        pagination_url=lambda page: url_for("client_routes.all_news_items", page=page),
         title="All News Items",
-        show_remove_article_button=False,
+        show_actions_button=False,
     )
 
 
-@api_routes.route("/news", methods=["GET", "POST"])
-async def news():
+@api_routes.route("/crawl-for-news", methods=["GET"])
+async def crawl_for_news():
     if request.method == "GET":
         articles = await news_item_service.crawl_all_sources()
         return (
@@ -141,18 +139,10 @@ async def news():
             ),
             200,
         )
-    elif request.method == "POST":
-        articles = await news_item_service.summarize_and_categorize_articles()
-        return jsonify(
-            {
-                "message": "Articles have been scraped and summarized.",
-                "data": articles,
-            }
-        )
     return jsonify({"error": "Invalid request method"}), 405
 
 
-@api_routes.route("/scrape-articles", methods=["POST"])
+@api_routes.route("/scrape-articles", methods=["GET"])
 async def scrape_articles():
     """
     Endpoint to scrape articles that require scraping.
@@ -172,7 +162,7 @@ async def scrape_articles():
         return jsonify({"error": f"An error occurred: {str(e)}"}), 500
 
 
-@api_routes.route("/generate-content", methods=["POST"])
+@api_routes.route("/generate-content", methods=["GET"])
 async def generate_content():
     """
     Endpoint to generate content for articles that require it.
@@ -217,31 +207,30 @@ def remove_article(article_id: int):
         return jsonify({"error": f"An error occurred: {str(e)}"}), 500
 
 
-# @api_routes.route("/auth/sign-up", methods=["POST"])
-# def sign_up():
-#     data = request.json
-#     email = data.get("email")
-#     password = data.get("password")
-#     if not email or not password:
-#         return jsonify({"error": "Email and password are required"}), 400
-
-#     response = auth_service.sign_up(email, password)
-#     return jsonify(response)
-
-
-# @api_routes.route("/auth/sign-in", methods=["POST"])
-# def sign_in():
-#     data = request.json
-#     email = data.get("email")
-#     password = data.get("password")
-#     if not email or not password:
-#         return jsonify({"error": "Email and password are required"}), 400
-
-#     response = auth_service.sign_in(email, password)
-#     return jsonify(response)
-
-
-# @api_routes.route("/auth/sign-out", methods=["POST"])
-# def sign_out():
-#     response = auth_service.sign_out()
-#     return jsonify(response)
+@api_routes.route("/toggle_select_for_download/<int:article_id>", methods=["POST"])
+def toggle_select_for_download(article_id: int):
+    """
+    Endpoint to toggle the 'is_selected_for_download' status of an article by its ID.
+    """
+    try:
+        data = request.get_json()
+        is_selected_for_download = data.get("is_selected_for_download", False)
+        response = database_service.update_news_item_selected_for_download(
+            article_id, is_selected_for_download
+        )
+        if response:
+            return (
+                jsonify(
+                    {
+                        "message": "Article 'Select for Download' status updated successfully."
+                    }
+                ),
+                200,
+            )
+        else:
+            return (
+                jsonify({"error": "Article not found or could not be updated."}),
+                404,
+            )
+    except Exception as e:
+        return jsonify({"error": f"An error occurred: {str(e)}"}), 500

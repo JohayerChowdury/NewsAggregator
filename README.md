@@ -59,12 +59,13 @@
 
 ### Categories for the News:
 
-From my work with the Middle Housing Finance Hub team, I came to the conclusion of the following 4 categories:
+From my work with the Middle Housing Finance Hub team, I came to the conclusion of the following categories:
 
-- Government Updates regarding Legal & Financing Implications
-- Company Updates regarding Products & Programs Offered
-- Locality Updates regarding Construction & Community Projects
-- Other Updates regarding Middle Housing Financing
+- "Government Policy & Regulatory Updates",
+- "Financial Incentives & Housing Programs",
+- "Industry Innovations & Construction Resources",
+- "Community Initiatives & Local Developments",
+- "Housing Market Trends & Demographic Insights",
 
 <!-- ## Publish News for Webflow site
 - Each NewsItem has a BOOLEAN (true/false) field called selected_for_display. This field is used to identify whether or not the article would be downloaded

@@ -50,11 +50,15 @@ body {
 }
 
 article {
+  display: flex;
+  flex-direction: column;
   background-color: #fff;
   padding: 20px;
   margin-bottom: 20px;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  max-height: 400px;
+  overflow: scroll;
 }
 
 article h2 {
@@ -67,6 +71,9 @@ article p {
   line-height: 1.6em;
 }
 
+/* .article-section {
+} */
+
 a {
   text-decoration: none;
   font-size: 1.2rem;
@@ -76,6 +83,7 @@ a {
 a:hover {
   text-decoration: underline;
 }
+
 button {
   padding: 10px 15px;
   font-size: 1em;

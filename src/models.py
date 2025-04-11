@@ -1,25 +1,11 @@
 from pydantic import BaseModel, Field, ValidationError
 from typing import Optional
 
-# from datetime import datetime
-# from enum import Enum
-# from uuid import UUID
-# import json
-
 from .utils import (
     standardize_date_type_format,
     clean_and_normalize_text,
     normalize_html_content,
 )
-
-
-# class NewsItemCategory(str, Enum):
-#     """Enum for news item categories."""
-
-#     GOVERNMENT = "government"
-#     COMPANY = "company"
-#     COMMUNITY = "community"
-#     OTHER = "other"
 
 
 class NewsItemSchema(BaseModel):
@@ -29,9 +15,6 @@ class NewsItemSchema(BaseModel):
     id: Optional[int] = Field(
         None, primary_key=True, description="Unique identifier for the news item"
     )
-    # uuid: UUID = Field(
-    #     ..., description="Universally unique identifier for the news item"
-    # )
 
     ## required fields
     data_source_type: str = Field(
@@ -148,30 +131,29 @@ class NewsItemSchema(BaseModel):
 
         return None
 
-    def get_article_relevant_information(self):
-        """
-        Retrieve relevant information from the article.
-        """
-        relevant_information = ""
-        if self.extracted_title:
-            relevant_information += f"Title: {self.get_title()}\n"
-
-        if self.extracted_news_source:
-            relevant_information += f"News Source: {self.get_news_source()}\n"
-
-        relevant_information += f"Summary: {self.get_article_summary()}\n"
-
-        return relevant_information
-
     def get_article_text(self):
         if self.crawl4ai_result:
             return normalize_html_content(
                 self.crawl4ai_result.get("fit_html", "cleaned_html")
             )
-        else:
-            return self.get_article_relevant_information()
+        return "This article was not scraped to retrieve its text."
 
     def get_category(self):
         if self.generated_category:
             return self.generated_category
         return None
+
+    # def get_article_relevant_information(self):
+    #     """
+    #     Retrieve relevant information from the article.
+    #     """
+    #     relevant_information = ""
+    #     if self.extracted_title:
+    #         relevant_information += f"Title: {self.get_title()}\n"
+
+    #     if self.extracted_news_source:
+    #         relevant_information += f"News Source: {self.get_news_source()}\n"
+
+    #     relevant_information += f"Summary: {self.get_article_summary()}\n"
+
+    #     return relevant_information

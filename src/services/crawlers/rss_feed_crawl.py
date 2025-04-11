@@ -6,9 +6,8 @@ import ssl
 RSS_FEEDS = {
     "Canadian Mortgage Trends": "https://www.canadianmortgagetrends.com/feed/",  # works
     # "Government of Canada: Finance": "https://api.io.canada.ca/io-server/gc/news/en/v2?dept=departmentfinance&type=newsreleases&sort=publishedDate&orderBy=desc&publishedDate%3E=2020-08-09&pick=100&format=atom&atomtitle=Canada%20News%20Centre%20-%20Department%20of%20Finance%20Canada%20-%20News%20Releases",  # doesnt work,
-    # TODO: look into podcasts and how to parse them
     # "Podcast: The Hidden Upside: Real Estate": "https://feeds.libsyn.com/433605/rss",
-    # "Podcast: The Real Estate REplay": "https://feeds.buzzsprout.com/1962859.rss",  # doesnt work (for now)
+    # "Podcast: The Real Estate REplay": "https://feeds.buzzsprout.com/1962859.rss",  # doesnt work
 }
 
 # Create an SSL context to ignore verification

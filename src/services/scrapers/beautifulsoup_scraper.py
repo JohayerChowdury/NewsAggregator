@@ -1,11 +1,6 @@
 from requests_cache import CachedSession
 from bs4 import BeautifulSoup
 
-# PROXY_ADDRESSES = {
-#     "http": "http://72.206.181.123:4145",
-#     "https": "http://67.43.227.229",
-# }
-
 # Custom headers to mimic a real browser
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"

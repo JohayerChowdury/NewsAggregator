@@ -3,8 +3,6 @@ from postgrest import SyncSelectRequestBuilder
 from typing import List, Optional
 from enum import Enum
 
-# from googlenewsdecoder import GoogleDecoder
-
 from ..models import NewsItemSchema
 
 
@@ -76,7 +74,6 @@ class SupabaseDBService:
     ):
         query = self.query_ALL_news_items_from_db()
 
-        # Apply filters
         if filters:
             for column, value in filters.items():
                 if value == "null":
@@ -84,12 +81,10 @@ class SupabaseDBService:
                 else:
                     query = query.eq(column, value)
 
-        # Apply not-null checks
         if not_null_fields:
             for field in not_null_fields:
                 query = query.not_.is_(field, "null")
 
-        # Apply sorting
         if sort:
             for column, value in sort.items():
                 if value == "asc":
@@ -136,7 +131,6 @@ class SupabaseDBService:
         Insert a news item into the database.
         """
         try:
-            # Serialize the news item, excluding unset fields (like id)
             serialized_item = news_item.get_json()
 
             response: PostgrestAPIResponse = (
@@ -168,7 +162,6 @@ class SupabaseDBService:
         Update a news item in the database.
         """
         try:
-            # Ensure the news item is serialized to match the database schema
             serialized_item = news_item.get_json()
 
             response: PostgrestAPIResponse = (
@@ -210,6 +203,24 @@ class SupabaseDBService:
             return response.data[0] if response.data else None
         except Exception as e:
             print(f"Error updating is_removed_from_display: {e}")
+            return None
+
+    def update_news_item_selected_for_download(
+        self, id: int, is_selected_for_download: bool
+    ) -> Optional[dict]:
+        """
+        Update the is_selected_for_download field in the database.
+        """
+        try:
+            response: PostgrestAPIResponse = (
+                self.supabase_client.table(self.NEWS_ITEMS_TABLE)
+                .update({"is_selected_for_download": is_selected_for_download})
+                .eq("id", id)
+                .execute()
+            )
+            return response.data[0] if response.data else None
+        except Exception as e:
+            print(f"Error updating is_selected_for_download: {e}")
             return None
 
     # DELETE METHODS
