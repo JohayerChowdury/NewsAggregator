@@ -35,7 +35,7 @@ config = Config().dev_config
 def create_app():
     app = Flask(__name__)
     app.env = config.ENV
-    app.secret_key = os.environ.get("SECRET_KEY")
+    # app.secret_key = os.environ.get("SECRET_KEY")
 
     # Initialize Supabase service
     global database_service

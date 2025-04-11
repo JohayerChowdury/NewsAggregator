@@ -35,11 +35,11 @@ class ArticleData(BaseModel):
 class Crawl4AIScraper:
     _patch_applied = False  # class-level flag to ensure we only patch once
 
-    def __init__(self, openai_api_key=None):
+    def __init__(self):
         """
         Initialize the scraper with reusable configurations.
         """
-        self.openai_api_key = openai_api_key or os.getenv("OPENAI_API_KEY")
+        self.openai_api_key = os.getenv("OPENAI_API_KEY")
 
         if not Crawl4AIScraper._patch_applied:
             self._apply_patch()

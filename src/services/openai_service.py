@@ -14,8 +14,8 @@ categories = [
 
 
 class OpenAIService:
-    def __init__(self, openai_api_key=None, organization=None, project=None):
-        self.openai_api_key = openai_api_key or os.getenv("OPENAI_API_KEY")
+    def __init__(self, organization=None, project=None):
+        self.openai_api_key = os.getenv("OPENAI_API_KEY")
         self.config = {
             "api_key": self.openai_api_key or "doesntmatter",
             "base_url": os.getenv("LLM_ENDPOINT") or "https://api.openai.com/v1",
@@ -35,7 +35,7 @@ class OpenAIService:
             organization=self.config["organization"],
             project=self.config["project"],
         )
-        self.async_openai_client = AsyncOpenAI(  # Initialize AsyncOpenAI client
+        self.async_openai_client = AsyncOpenAI(
             api_key=self.config["api_key"],
             base_url=self.config["base_url"],
             organization=self.config["organization"],
